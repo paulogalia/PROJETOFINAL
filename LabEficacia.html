@@ -1,0 +1,237 @@
+<style>
+  /* LAYOUT */
+  .ef-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: 100%; max-width: 1600px; margin: 0 auto; overflow: hidden; }
+  .ef-sidebar { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  
+  /* GRUPOS E SELECTS */
+  .ef-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .ef-label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; display:flex; justify-content:space-between; }
+  .ef-select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; background-color: #f8fafc; font-size: 0.85rem; color: #1e293b; transition:0.2s; }
+  .ef-select:focus { border-color: #2563eb; background: #fff; outline: none; }
+  .ef-select:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* ÁREA DO GRÁFICO */
+  .ef-chart-area { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; position: relative; height: 100%; display:flex; flex-direction:column; }
+  #chart-eficacia { flex: 1; width: 100%; }
+
+  /* BOTÕES */
+  .btn-analisar { background: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; display:flex; justify-content:center; gap:8px; }
+  .btn-analisar:hover { background: #1e40af; }
+  
+  .btn-raiox { background: #fff; color: #0f172a; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; font-size: 0.85rem; margin-top: 5px; }
+  .btn-raiox:hover { border-color: #cbd5e1; background: #f8fafc; }
+
+  .btn-import { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; padding: 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; width: 100%; margin-top: auto; }
+  
+  /* ESTADO */
+  .loading-pulse { animation: pulse 1.5s infinite; color: #2563eb; font-weight:bold; font-size:0.8rem; text-align:center; display:none; }
+  @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+</style>
+
+<div class="ef-layout">
+  
+  <div class="ef-sidebar">
+    <div style="font-weight:800; color:#1e293b; padding-bottom:10px; border-bottom:1px solid #f1f5f9;">🧪 Filtros do Estudo</div>
+
+    <div class="ef-group" style="background:#f0f9ff; padding:10px; border-radius:8px; border:1px solid #bae6fd;">
+      <label class="ef-label">Fonte de Eventos (Fatos)</label>
+      <select id="ef-sheet-fatos" class="ef-select" onchange="loadMedicamentos()"></select>
+      
+      <label class="ef-label" style="margin-top:5px;">Fonte de Exames</label>
+      <select id="ef-sheet-exames" class="ef-select" onchange="loadExamesList()"></select>
+    </div>
+
+    <div id="loader-med" class="loading-pulse">Carregando listas...</div>
+
+    <div class="ef-group">
+      <label class="ef-label">Medicamento</label>
+      <select id="ef-med" class="ef-select" disabled onchange="loadPatients()">
+        <option value="">(Selecione Aba Fatos Primeiro)</option>
+      </select>
+    </div>
+
+    <div class="ef-group">
+      <label class="ef-label">Exame Alvo</label>
+      <select id="ef-exam" class="ef-select" disabled onchange="loadPatients()">
+        <option value="">(Selecione Aba Exames Primeiro)</option>
+      </select>
+    </div>
+
+    <hr style="border:0; border-top:1px solid #f1f5f9; margin:5px 0;">
+
+    <div class="ef-group">
+      <label class="ef-label">Paciente (Prontuário)</label>
+      <select id="ef-patient" class="ef-select" disabled>
+        <option value="">Aguardando Filtros...</option>
+      </select>
+    </div>
+
+    <button class="btn-analisar" onclick="renderChart()"><span>📈</span> Gerar Gráfico</button>
+    <button class="btn-raiox" onclick="alert('Funcionalidade Raio-X em breve!')"><span>📊</span> Raio-X Populacional</button>
+    
+    <button class="btn-import" onclick="importDb()">📥 Atualizar Banco Mestre</button>
+  </div>
+
+  <div class="ef-chart-area">
+    <div id="ef-chart-status" style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Selecione os filtros para visualizar.</div>
+    <div id="chart-eficacia"></div>
+  </div>
+
+</div>
+
+<script>
+  // Variáveis de Estado
+  let efic_currentData = [];
+  let efic_config = {};
+
+  // INICIALIZAÇÃO
+  function initEficaciaModule() {
+    // Carrega configurações e abas
+    const state = apiGetInitialState ? apiGetInitialState() : null; // Mock se rodar local
+    
+    // Pega a configuração global do Dashboard
+    if (typeof globalConfig !== 'undefined') efic_config = globalConfig;
+    else {
+       // Fallback: tenta ler do HTML se a global não estiver pronta
+       google.script.run.withSuccessHandler(s => {
+          efic_config = s.config;
+          initSelectors(s.sheets);
+       }).apiGetInitialState();
+       return;
+    }
+    
+    // Se já temos as sheets globais
+    if(typeof allSheets !== 'undefined') initSelectors(allSheets);
+  }
+
+  function initSelectors(sheets) {
+    const selFatos = document.getElementById('ef-sheet-fatos');
+    const selExames = document.getElementById('ef-sheet-exames');
+    
+    // Preenche Abas
+    let opts = '<option value="">Selecione...</option>';
+    sheets.forEach(s => opts += `<option value="${s}">${s}</option>`);
+    selFatos.innerHTML = opts;
+    selExames.innerHTML = opts;
+
+    // Tenta selecionar o padrão da Configuração
+    if (efic_config.core?.abaFatos) {
+      selFatos.value = efic_config.core.abaFatos;
+      loadMedicamentos(); // Carrega a lista de meds
+    }
+    if (efic_config.exames?.aba) {
+      selExames.value = efic_config.exames.aba;
+      loadExamesList(); // Carrega a lista de exames
+    }
+  }
+
+  // --- CARREGADORES DE LISTAS ---
+
+  function loadMedicamentos() {
+    const sheet = document.getElementById('ef-sheet-fatos').value;
+    const colMed = efic_config.core?.colMed; // Pega nome da coluna da config
+    const sel = document.getElementById('ef-med');
+    
+    if (!sheet || !colMed) return;
+    
+    document.getElementById('loader-med').style.display = 'block';
+    sel.innerHTML = '<option>Carregando...</option>';
+    sel.disabled = true;
+
+    google.script.run.withSuccessHandler(lista => {
+      document.getElementById('loader-med').style.display = 'none';
+      sel.innerHTML = '<option value="">Selecione Medicamento...</option>';
+      lista.forEach(m => sel.innerHTML += `<option value="${m}">${m}</option>`);
+      sel.disabled = false;
+    }).apiGetUniqueValues(sheet, colMed);
+  }
+
+  function loadExamesList() {
+    const sheet = document.getElementById('ef-sheet-exames').value;
+    const colNome = efic_config.exames?.colNome;
+    const sel = document.getElementById('ef-exam');
+    
+    if (!sheet || !colNome) return;
+
+    sel.innerHTML = '<option>Carregando...</option>';
+    sel.disabled = true;
+
+    google.script.run.withSuccessHandler(lista => {
+      sel.innerHTML = '<option value="">Selecione Exame...</option>';
+      lista.forEach(e => sel.innerHTML += `<option value="${e}">${e}</option>`);
+      sel.disabled = false;
+    }).apiGetUniqueValues(sheet, colNome);
+  }
+
+  // --- CARREGA PACIENTES (CRUZAMENTO) ---
+
+  function loadPatients() {
+    const med = document.getElementById('ef-med').value;
+    const exam = document.getElementById('ef-exam').value;
+    const sel = document.getElementById('ef-patient');
+    
+    if (!med || !exam) return;
+
+    sel.innerHTML = '<option>Analisando dados...</option>';
+    sel.disabled = true;
+
+    // Chama o motor de eficácia (que já faz o cruzamento Med x Exame)
+    google.script.run.withSuccessHandler(res => {
+      if (!res.sucesso) { alert("Erro: " + res.erro); return; }
+
+      efic_currentData = res.dados; // Guarda dados brutos
+      
+      // Extrai lista única de pacientes que têm AMBOS (Med + Exame)
+      const pacientesUnicos = [...new Set(res.dados.map(d => d.prontuario))].sort();
+      
+      if (pacientesUnicos.length === 0) {
+         sel.innerHTML = '<option>Nenhum paciente encontrado.</option>';
+         return;
+      }
+
+      sel.innerHTML = '<option value="">Selecione Paciente (' + pacientesUnicos.length + ')</option>';
+      pacientesUnicos.forEach(p => sel.innerHTML += `<option value="${p}">${p}</option>`);
+      sel.disabled = false;
+      
+      document.getElementById('ef-chart-status').innerText = `Encontrados ${pacientesUnicos.length} pacientes com ${med} e ${exam}.`;
+
+    }).apiGetEficaciaData({ medicamento: med, exameAlvo: exam });
+  }
+
+  // --- PLOTAGEM ---
+
+  function renderChart() {
+    const pid = document.getElementById('ef-patient').value;
+    if (!pid) return alert("Selecione um paciente da lista.");
+    
+    // Filtra dados do paciente selecionado
+    const data = efic_currentData.filter(d => d.prontuario === pid).sort((a,b) => a.x - b.x);
+    
+    const xVals = data.map(d => d.x); // Dias
+    const yVals = data.map(d => d.y); // Valor
+    
+    const trace = {
+      x: xVals, y: yVals, mode: 'lines+markers',
+      line: {shape: 'spline', color: '#2563eb'},
+      marker: {size: 8}
+    };
+    
+    const layout = {
+      title: `Paciente ${pid} - ${document.getElementById('ef-exam').value}`,
+      xaxis: {title: 'Dias de Tratamento'},
+      yaxis: {title: 'Resultado Exame'},
+      margin: {t:40, b:40, l:50, r:20}
+    };
+
+    Plotly.newPlot('chart-eficacia', [trace], layout, {responsive: true});
+  }
+
+  function importDb() {
+    if(confirm("Importar Referências do Mestre?")) {
+      google.script.run.withSuccessHandler(alert).apiImportarReferencias();
+    }
+  }
+  
+  // Auto-Init se carregado via include
+  setTimeout(initEficaciaModule, 500);
+</script>
