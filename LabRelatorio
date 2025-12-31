@@ -1,0 +1,285 @@
+<style>
+  /* --- ESTILOS DE TELA (Layout Normal) --- */
+  .rep-container { max-width: 1000px; margin: 0 auto; padding-bottom: 50px; font-family: 'Inter', sans-serif; }
+  
+  .rep-toolbar { 
+    display: flex; justify-content: space-between; align-items: center; 
+    background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; 
+    margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  }
+  
+  .rep-title { font-size: 1.5rem; font-weight: 800; color: #1e293b; margin: 0; }
+  
+  .rep-list { display: flex; flex-direction: column; gap: 30px; }
+  
+  /* CARTÕES */
+  .rep-card { 
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; 
+    position: relative; margin-bottom: 20px;
+  }
+  
+  .rep-card-header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+  .rep-card-title { font-weight: 700; color: #334155; font-size: 1.1rem; }
+  .rep-card-meta { font-size: 0.8rem; color: #94a3b8; }
+  
+  /* ÁREAS DE LAUDO (NOVOS ESTILOS) */
+  .rep-ai-box {
+    background: #f0fdf4; border-left: 4px solid #10b981; padding: 15px;
+    margin-top: 25px; border-radius: 6px; color: #14532d; font-size: 0.9rem; line-height: 1.5;
+  }
+  
+  .rep-user-box { margin-top: 20px; }
+  .rep-label { font-weight: 700; color: #475569; font-size: 0.85rem; display: block; margin-bottom: 8px; }
+  
+  .rep-textarea {
+    width: 100%; min-height: 80px; padding: 12px; border: 1px solid #cbd5e1;
+    border-radius: 8px; font-family: inherit; font-size: 0.95rem; resize: vertical;
+    background: #f8fafc; box-sizing: border-box;
+  }
+  .rep-textarea:focus { border-color: #3b82f6; outline: none; background: white; }
+
+  /* BOTÕES */
+  .btn-print { background: #1e293b; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  .btn-print:hover { background: #0f172a; }
+  
+  .btn-clear { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+</style>
+
+<div class="rep-container">
+  
+  <div class="rep-toolbar">
+    <div>
+      <h2 class="rep-title">Relatório de Evidências</h2>
+      <div style="font-size:0.85rem; color:#64748b; margin-top:5px;">
+        Itens adicionados: <span id="rep-count">0</span>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn-clear" onclick="clearReport()">Limpar Tudo</button>
+      <button class="btn-print" onclick="triggerPrint()">
+        <span class="material-icons-round">print</span> Imprimir PDF
+      </button>
+    </div>
+  </div>
+
+  <div id="rep-content" class="rep-list">
+    <div style="text-align:center; padding:60px; color:#cbd5e1; border: 2px dashed #e2e8f0; border-radius:12px;">
+      <span class="material-icons-round" style="font-size:3rem; margin-bottom:10px;">post_add</span>
+      <p>O relatório está vazio.<br>Vá ao Explorador e clique em "📌 Adicionar".</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  if (!window.REPORT_ITEMS) window.REPORT_ITEMS = [];
+
+  function refreshReportView() {
+    const container = document.getElementById('rep-content');
+    const count = document.getElementById('rep-count');
+    
+    count.innerText = window.REPORT_ITEMS.length;
+
+    if (window.REPORT_ITEMS.length === 0) {
+      container.innerHTML = `<div style="text-align:center; padding:60px; color:#cbd5e1; border: 2px dashed #e2e8f0; border-radius:12px;"><span class="material-icons-round" style="font-size:3rem; margin-bottom:10px;">post_add</span><p>O relatório está vazio.<br>Vá ao Explorador e clique em "📌 Adicionar".</p></div>`;
+      return;
+    }
+
+    container.innerHTML = ''; 
+
+    window.REPORT_ITEMS.forEach((item, index) => {
+      const card = document.createElement('div');
+      card.className = 'rep-card';
+      const chartId = `rep-chart-${index}`;
+      
+      let contentHtml = '';
+      if (item.type === 'chart') {
+         contentHtml = `<div id="${chartId}" style="width:100%; height:400px;"></div>`;
+      } else if (item.type === 'table') {
+         contentHtml = renderTableHtml(item.data);
+      }
+
+      // Constrói o HTML com as áreas de texto novas
+      card.innerHTML = `
+        <div class="rep-card-header">
+          <div>
+            <div class="rep-card-title">${item.title}</div>
+            <div class="rep-card-meta">${item.timestamp} • Origem: ${item.source}</div>
+          </div>
+          <button class="rep-remove" onclick="removeItem(${index})" style="color:#ef4444; background:none; border:none; cursor:pointer; font-weight:bold;">✕</button>
+        </div>
+        
+        ${contentHtml}
+
+        <div class="rep-ai-box" style="display: ${item.aiText ? 'block' : 'none'}">
+          <strong>🤖 Análise Automática:</strong><br>
+          ${item.aiText || ''}
+        </div>
+
+        <div class="rep-user-box">
+          <label class="rep-label">📝 Parecer Técnico (Opcional):</label>
+          <textarea class="rep-textarea" 
+             placeholder="Escreva as suas observações clínicas aqui..." 
+             oninput="saveComment(${index}, this.value)">${item.userComment || ''}</textarea>
+        </div>
+      `;
+      
+      container.appendChild(card);
+
+      if (item.type === 'chart') {
+        setTimeout(() => {
+           Plotly.newPlot(chartId, item.data, item.layout, {staticPlot: false, responsive: true}); 
+        }, 50);
+      }
+    });
+  }
+
+  // Salva o comentário na memória global
+  function saveComment(index, text) {
+    if(window.REPORT_ITEMS[index]) {
+       window.REPORT_ITEMS[index].userComment = text;
+    }
+  }
+
+  function renderTableHtml(rows) {
+    if(!rows || rows.length === 0) return '<p>Sem dados.</p>';
+    let html = '<table style="width:100%; border-collapse:collapse; font-size:0.8rem;"><thead><tr>';
+    Object.keys(rows[0]).forEach(k => html += `<th style="text-align:left; padding:8px; border-bottom:2px solid #e2e8f0; background:#f8fafc; color:#475569;">${k}</th>`);
+    html += '</tr></thead><tbody>';
+    rows.forEach(r => {
+      html += '<tr>';
+      Object.values(r).forEach(v => html += `<td style="padding:8px; border-bottom:1px solid #f1f5f9; color:#334155;">${v}</td>`);
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+
+  // --- SUA FUNÇÃO DE IMPRESSÃO (Melhorada com Textos) ---
+  async function triggerPrint() {
+    if (!window.REPORT_ITEMS || window.REPORT_ITEMS.length === 0) {
+      alert('O relatório está vazio.');
+      return;
+    }
+
+    let htmlContent = `
+      <h1 style="margin-bottom:10px; font-family:'Inter',sans-serif; color:#1e293b;">Relatório EUM Manager</h1>
+      <p style="color:#666; margin-bottom:40px; font-family:'Inter',sans-serif;">
+        Gerado em ${new Date().toLocaleString()}
+      </p>
+      <hr style="margin-bottom:40px; border:0; border-top:1px solid #ccc;">
+    `;
+
+    for (let i = 0; i < window.REPORT_ITEMS.length; i++) {
+      const item = window.REPORT_ITEMS[i];
+
+      htmlContent += `
+        <div style="border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:32px; font-family:'Inter',sans-serif; page-break-inside:avoid;">
+          <div style="font-weight:700; font-size:1.1rem; color:#111827; margin-bottom:16px;">
+            ${item.title}
+          </div>
+      `;
+
+      // 1. Renderiza Conteúdo Visual
+      if (item.type === 'table') {
+        htmlContent += renderTableHtml(item.data);
+      } else if (item.type === 'chart') {
+        try {
+          // Converte gráfico em imagem estática para o PDF
+          const imgData = await Plotly.toImage({
+            data: item.data,
+            layout: Object.assign({}, item.layout, { autosize: true })
+          }, { format: 'png', width: 800, height: 500 });
+
+          htmlContent += `
+            <div style="text-align:center; margin-top:16px; margin-bottom:20px;">
+              <img src="${imgData}" style="max-width:100%; height:auto;">
+            </div>
+          `;
+        } catch (e) {
+          htmlContent += `<p style="color:#b91c1c;">Erro ao renderizar gráfico.</p>`;
+        }
+      }
+
+      // 2. Adiciona Texto da IA (Se existir)
+      if (item.aiText) {
+         htmlContent += `
+           <div style="margin-top:20px; padding:12px; background:#f0fdf4; border-left:4px solid #10b981; font-size:0.9rem; color:#14532d;">
+             <strong>Análise Automática:</strong><br>${item.aiText}
+           </div>
+         `;
+      }
+
+      // 3. Adiciona Comentário do Usuário (Se existir)
+      if (item.userComment) {
+         // Converte quebras de linha em <br> para sair certo no HTML
+         const formattedComment = item.userComment.replace(/\n/g, '<br>');
+         htmlContent += `
+           <div style="margin-top:20px; padding:15px; background:#fafafa; border:1px solid #e5e7eb; border-radius:8px; font-size:1rem; color:#374151;">
+             <strong>Parecer Técnico:</strong><br>${formattedComment}
+           </div>
+         `;
+      }
+
+      htmlContent += `</div>`; // Fecha Card
+    }
+
+    // Abre Janela de Impressão
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) { alert('Pop-up bloqueado.'); return; }
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Relatório EUM</title>
+          <meta charset="utf-8">
+          <style>
+            @page { margin: 15mm; }
+            body { font-family: 'Inter', Arial, sans-serif; padding: 20px; color: #111827; }
+            table { border-collapse: collapse; width: 100%; font-size: 0.8rem; }
+            th, td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; text-align: left; }
+            th { background: #f3f4f6; font-weight: 600; }
+          </style>
+        </head>
+        <body>${htmlContent}</body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Aguarda imagens carregarem
+    setTimeout(() => {
+      printWindow.print();
+      // printWindow.close(); // Opcional
+    }, 800);
+  }
+
+  function removeItem(index) {
+    window.REPORT_ITEMS.splice(index, 1);
+    refreshReportView();
+  }
+
+  function clearReport() {
+    if(confirm("Limpar?")) {
+      window.REPORT_ITEMS = [];
+      refreshReportView();
+    }
+  }
+
+  window.addToReport = function(item) {
+    if (!window.REPORT_ITEMS) window.REPORT_ITEMS = [];
+    item.timestamp = new Date().toLocaleString();
+    window.REPORT_ITEMS.push(item);
+    
+    const badge = document.createElement('div');
+    badge.innerHTML = `<span class="material-icons-round" style="vertical-align:middle; margin-right:5px;">check_circle</span> Adicionado`;
+    badge.style.cssText = "position:fixed; bottom:30px; right:30px; background:#10b981; color:white; padding:12px 24px; border-radius:8px; z-index:9999; font-weight:bold; box-shadow:0 10px 20px rgba(0,0,0,0.2); animation: fadeIn 0.3s;";
+    document.body.appendChild(badge);
+    setTimeout(() => badge.remove(), 2500);
+    
+    refreshReportView(); 
+  };
+  
+  setTimeout(refreshReportView, 500);
+</script>
