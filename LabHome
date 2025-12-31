@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  
+  <style>
+  /* --- VARIÁVEIS E RESET --- */
+  :root {
+    --sidebar-width: 64px;
+    --primary: #2563eb;
+    --surface: #f8fafc;
+    --border: #e2e8f0;
+    --text-main: #1e293b;
+  }
+
+  body, html { 
+    margin: 0; padding: 0; 
+    height: 100%; width: 100%;
+    font-family: 'Inter', sans-serif; 
+    background-color: var(--surface); 
+    overflow: hidden; /* Impede scroll na janela principal */
+  }
+
+  /* --- LAYOUT PRINCIPAL (GRID) --- */
+  .app-shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr; /* Coluna 1: Sidebar | Coluna 2: Conteúdo */
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* --- 1. BARRA LATERAL (SIDEBAR) --- */
+  .app-sidebar {
+    background-color: #1e293b; /* Azul Escuro Profissional */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 20px;
+    gap: 15px;
+    z-index: 100;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  }
+
+  /* Botões de Navegação */
+  .nav-btn {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    color: #94a3b8; /* Cinza claro inativo */
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease;
+    position: relative; /* Para o Tooltip */
+  }
+
+  .nav-btn:hover { 
+    background: rgba(255,255,255,0.1); 
+    color: #fff; 
+  }
+  
+  .nav-btn.active { 
+    background: var(--primary); 
+    color: #fff; 
+    box-shadow: 0 4px 12px rgba(37,99,235,0.4); 
+  }
+  
+  .nav-btn .material-icons-round { font-size: 24px; }
+  
+  /* Tooltip (Legenda ao passar o mouse) */
+  .nav-btn:hover::after {
+    content: attr(data-title);
+    position: absolute; left: 55px;
+    background: #0f172a; color: white;
+    padding: 6px 10px; border-radius: 6px;
+    font-size: 12px; white-space: nowrap;
+    opacity: 1; pointer-events: none;
+    z-index: 200;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+
+  /* --- 2. ÁREA DE CONTEÚDO (VIEWS) --- */
+  .app-content {
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  /* Camadas de Visualização (Views) */
+  .view-section {
+    width: 100%; height: 100%;
+    position: absolute; top: 0; left: 0;
+    opacity: 0; visibility: hidden; /* Oculto por padrão */
+    transition: opacity 0.3s ease;
+    overflow-y: auto; /* Scroll apenas dentro da view */
+    padding: 0;
+    z-index: 1;
+  }
+
+  .view-section.active { 
+    opacity: 1; 
+    visibility: visible; 
+    z-index: 10; 
+  }
+
+  /* --- LOADER GLOBAL --- */
+  #global-loader {
+    position: fixed; top: 10px; right: 10px;
+    z-index: 99999; display: none; /* Controlado via JS */
+    background: white; padding: 5px 12px; border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    align-items: center; gap: 8px; 
+    font-size: 12px; color: #64748b; font-weight: 600;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .spinner { 
+    width: 14px; height: 14px; 
+    border: 2px solid #e2e8f0; 
+    border-top-color: var(--primary); 
+    border-radius: 50%; 
+    animation: spin 1s linear infinite; 
+  }
+  @keyframes spin { to {transform: rotate(360deg);} }
+
+</style>
+</head>
+<body>
+
+<?!= include('SplashScreen'); ?>
+
+<div class="app-shell">
+  
+  <nav class="app-sidebar">
+    <div style="font-weight:900; color:#fff; font-size:18px; margin-bottom:15px; margin-top:10px; letter-spacing:-1px;">IC</div>
+
+    <button class="nav-btn active" onclick="navTo('explorador')" data-target="explorador" data-title="Explorador de Dados">
+      <span class="material-icons-round">analytics</span>
+    </button>
+
+    <button class="nav-btn" onclick="navTo('farmaco')" data-target="farmaco" data-title="Farmacovigilância">
+      <span class="material-icons-round">local_pharmacy</span>
+    </button>
+    
+    <button class="nav-btn" onclick="navTo('relatorio')" data-target="relatorio" data-title="Relatório Inteligente">
+      <span class="material-icons-round">psychology</span>
+    </button>
+
+    <button class="nav-btn" onclick="openManual()" data-title="Manual de Uso">
+      <span class="material-icons-round">help_outline</span>
+    </button>
+
+    <div style="flex-grow:1"></div> 
+    
+    <button class="nav-btn" onclick="navTo('config')" data-target="config" data-title="Configurações">
+      <span class="material-icons-round">settings</span>
+    </button>
+
+    <div style="margin-top:10px; margin-bottom:15px; text-align:center; cursor:pointer; opacity:0.7;" 
+         onclick="updateModelsUI()" 
+         id="btn-update-ai" 
+         title="Clique para atualizar Modelos IA">
+      <span style="font-size:10px; color:#94a3b8; display:block;">v6.0</span>
+      <span style="font-size:14px;">🔄</span>
+    </div>
+
+  </nav>
+
+  <main class="app-content">
+    
+    <div id="view-explorador" class="view-section active">
+       <?!= include('LabExplorador'); ?> 
+    </div>
+
+    <div id="view-farmaco" class="view-section">
+       <?!= include('LabFarmaco'); ?> 
+    </div>
+
+    <div id="view-relatorio" class="view-section">
+       <?!= include('LabRelatorio'); ?> 
+    </div>
+    </div>
+
+    <div id="view-config" class="view-section" style="padding-top:20px;">
+       <?!= include('LabWizard'); ?> 
+    </div>
+
+    <div id="manual-wrapper">
+      <?!= include('Guia'); ?>
+    </div>
+    
+  </main>
+
+</div> <div id="global-loader"><div class="spinner"></div> Processando...</div>
+
+<script>
+  // Estado Global da Aplicação
+  let appData = null;
+
+  // =================================================================
+  // CICLO DE VIDA: INICIALIZAÇÃO (BOOT)
+  // =================================================================
+  (function startApp() {
+    // Chama o backend para obter o estado inicial (configurações salvas)
+    google.script.run
+      .withSuccessHandler(onBootSuccess)
+      .withFailureHandler(onBootError)
+      .apiGetInitialState();
+  })();
+
+  function onBootSuccess(data) {
+    console.log("Sistema carregado com sucesso:", data);
+    appData = data; 
+    
+    // Configura a tela inicial "por trás" da Splash Screen
+    setupBackgroundView(data.config, data.status);
+
+    // Gere a transição da Splash Screen
+    if (typeof startSplashSequence === 'function') {
+      startSplashSequence((mode) => { 
+        finalizeLaunch(mode); 
+      });
+    } else {
+      console.warn("Aviso: Módulo Splash Screen não detetado.");
+      showLoading(false);
+    }
+  }
+
+  function onBootError(err) {
+    alert("Erro crítico ao iniciar o sistema: " + err);
+    showLoading(false);
+  }
+
+  // =================================================================
+  // LÓGICA DE NAVEGAÇÃO
+  // =================================================================
+  
+  // Decide qual tela mostrar no arranque
+  function setupBackgroundView(config, status) {
+    if (status.hasCore) {
+      navTo('explorador'); // Se tem dados, vai para o painel
+    } else {
+      navTo('config'); // Se é novo, vai para o Wizard
+    }
+  }
+
+  // Ação final após a animação do foguete
+  function finalizeLaunch(mode) {
+    if (mode === 'new') {
+      navTo('config'); // Força ida ao Wizard se clicou em "Novo"
+    } else if (appData && !appData.status.hasCore) {
+      navTo('config'); // Se clicou "Continuar" mas não tem dados, vai para Wizard
+    }
+    // Caso contrário, mantém onde o setupBackgroundView colocou (Explorador)
+  }
+
+  // Função central de troca de telas (SPA)
+  function navTo(viewId) {
+    // 1. Atualiza visual dos botões
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    
+    // Procura botão pelo onclick ou data-target
+    const btn = document.querySelector(`.nav-btn[data-target="${viewId}"]`);
+    if(btn) btn.classList.add('active');
+
+    // 2. Troca a visibilidade das Views
+    document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+    const target = document.getElementById('view-' + viewId);
+    if(target) target.classList.add('active');
+  }
+
+  // =================================================================
+  // FUNÇÕES AUXILIARES
+  // =================================================================
+
+  // Abre o Manual de forma segura
+  function openManual() {
+    const modal = document.getElementById('guia-modal');
+    if (modal) {
+      modal.showModal(); // Método nativo do HTML <dialog>
+    } else {
+      console.error("ERRO: O elemento #guia-modal não foi encontrado no DOM.");
+      alert("Não foi possível abrir o Manual.\nVerifique se o ficheiro 'Guia.html' existe no projeto.");
+    }
+  }
+
+  // Atalhos globais para outros módulos usarem
+  function openWizard() { navTo('config'); }
+  function openAiReport() { navTo('relatorio'); }
+  
+  // Controle do Loader global
+  function showLoading(show=true) { 
+    const loader = document.getElementById('global-loader');
+    if(loader) loader.style.display = show ? 'flex' : 'none'; 
+  }
+
+  function updateModelsUI() {
+    const btn = document.getElementById('btn-update-ai');
+    btn.style.opacity = "1";
+    btn.innerHTML = '<span class="spinner" style="width:10px;height:10px;border-color:#94a3b8;border-top-color:#fff;display:inline-block;"></span>';
+    
+    google.script.run.withSuccessHandler(() => {
+       btn.innerHTML = '<span style="font-size:14px;">✅</span>';
+       setTimeout(() => {
+          btn.innerHTML = '<span style="font-size:10px; color:#94a3b8; display:block;">v6.0</span><span style="font-size:14px;">🔄</span>';
+          btn.style.opacity = "0.7";
+       }, 2000);
+    }).forceModelUpdate();
+  }
+</script>
+
+</body>
+</html>
