@@ -1,0 +1,120 @@
+<style>
+  .wiz-container { max-width: 800px; margin: 0 auto; padding: 20px; font-family: 'Inter', sans-serif; }
+  .wiz-step { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+  .step-num { background: #e0e7ff; color: #4338ca; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; margin-right: 10px; }
+  .drop-zone { border: 2px dashed #cbd5e1; border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; background: #f8fafc; margin-bottom: 15px; transition:0.2s; }
+  .drop-zone:hover { border-color: #2563eb; background: #eff6ff; }
+  .drop-zone.has-file { border-color: #10b981; background: #f0fdf4; color: #15803d; }
+  .wiz-review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+  .form-input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; }
+  .hidden { display: none; }
+  .source-toggle { display: flex; gap: 20px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9; }
+  .chk-wrapper { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; cursor: pointer; transition: 0.2s; }
+  .chk-wrapper:hover { border-color: #2563eb; background: #fff; }
+  .chk-wrapper input { width: 18px; height: 18px; accent-color: #2563eb; }
+</style>
+
+<div class="wiz-container">
+  <div style="text-align:center; margin-bottom:30px;">
+    <h2 style="color:#1e293b; margin-bottom:5px;">Configuração Inteligente</h2>
+    <p style="color:#64748b; margin:0;">O Gemini mapeará os seus dados automaticamente.</p>
+  </div>
+
+  <div id="wiz-step-1" class="wiz-step">
+    <h3><span class="step-num">1</span> Fonte de Dados</h3>
+    <div class="source-toggle">
+      <label style="cursor:pointer; font-weight:600; color:#475569;"><input type="radio" name="srcType" value="upload" checked onchange="toggleSource('upload')"> 📂 Upload Arquivo</label>
+      <label style="cursor:pointer; font-weight:600; color:#475569;"><input type="radio" name="srcType" value="sheet" onchange="toggleSource('sheet')"> 📑 Aba Existente</label>
+    </div>
+    <div id="src-upload-box">
+      <div class="drop-zone" id="drop-data" onclick="document.getElementById('file-data').click()">
+        <span class="material-icons-round" style="font-size:24px; vertical-align:middle; margin-right:5px;">table_view</span>
+        <span id="lbl-data">Carregar CSV / Excel</span>
+        <input type="file" id="file-data" accept=".csv,.xlsx" hidden onchange="handleFile('data', this)">
+      </div>
+    </div>
+    <div id="src-sheet-box" class="hidden" style="margin-bottom:20px;">
+      <select id="sel-sheets" class="form-input"><option>Carregando abas...</option></select>
+    </div>
+    <h3><span class="step-num">2</span> Protocolo (PDF)</h3>
+    <div class="drop-zone" id="drop-pdf" onclick="document.getElementById('file-pdf').click()">
+      <span class="material-icons-round" style="font-size:24px; vertical-align:middle; margin-right:5px;">picture_as_pdf</span>
+      <span id="lbl-pdf">Carregar PDF do Estudo</span>
+      <input type="file" id="file-pdf" accept=".pdf" hidden onchange="handleFile('pdf', this)">
+    </div>
+    <button onclick="runWizard()" style="width:100%; background:#2563eb; color:white; padding:12px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; margin-top:10px;">✨ ANALISAR COM IA</button>
+  </div>
+
+  <div id="wiz-step-2" class="wiz-step hidden">
+    <h3><span class="step-num">3</span> Validação</h3>
+    <div id="ai-analysis-box" style="background:#fff7ed; padding:15px; border-radius:8px; color:#9a3412; margin-bottom:15px; border:1px solid #fed7aa; font-size:0.9rem;"></div>
+    <form id="form-config"><div class="wiz-review-grid" id="grid-mapping"></div></form>
+    <div style="margin-top:20px; border-top:1px solid #f1f5f9; padding-top:20px;">
+      <label class="chk-wrapper" style="background:#f0fdf4; border-color:#86efac;">
+        <input type="checkbox" id="chk-import-refs" checked>
+        <div><div style="font-weight:700; color:#166534;">Importar Referências Clínicas (HCPA)</div><div style="font-size:0.75rem; color:#15803d;">Baixa a tabela mestre de exames.</div></div>
+      </label>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:25px;">
+      <button onclick="location.reload()" style="padding:10px 20px; border-radius:8px; border:none; cursor:pointer; color:#64748b;">Cancelar</button>
+      <button onclick="saveConfig()" style="flex-grow:1; background:#10b981; color:white; padding:10px; border-radius:8px; border:none; font-weight:bold; cursor:pointer;">💾 SALVAR & CONECTAR</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let wizFiles = { pdf: null, data: null, name: "" }, finalConfig = {};
+  (function init() {
+    google.script.run.withSuccessHandler(d => {
+      const sel = document.getElementById('sel-sheets');
+      sel.innerHTML = '<option value="">-- Selecione --</option>' + d.sheets.map(s=>`<option value="${s}">${s}</option>`).join('');
+    }).apiGetInitialState();
+  })();
+  function toggleSource(m) {
+    document.getElementById('src-upload-box').className = m==='upload'?'':'hidden';
+    document.getElementById('src-sheet-box').className = m==='sheet'?'':'hidden';
+  }
+  function handleFile(type, input) {
+    const f = input.files[0]; if(!f) return;
+    document.getElementById('lbl-'+type).innerText = "✔ " + f.name;
+    document.getElementById('drop-'+type).classList.add('has-file');
+    const r = new FileReader();
+    if(type==='pdf') { r.onload=e=>wizFiles.pdf=e.target.result.split(',')[1]; r.readAsDataURL(f); }
+    else { wizFiles.name=f.name; r.onload=e=>wizFiles.data=e.target.result.trim().split('\n').map(r=>r.split(',').map(c=>c.replace(/"/g,'').trim())); r.readAsText(f); }
+  }
+  function runWizard() {
+    if(!wizFiles.pdf) return alert("Falta o PDF.");
+    const mode = document.querySelector('input[name="srcType"]:checked').value;
+    const sheet = mode==='sheet' ? document.getElementById('sel-sheets').value : null;
+    if(mode==='upload' && !wizFiles.data) return alert("Falta o CSV.");
+    if(mode==='sheet' && !sheet) return alert("Selecione a aba.");
+    if(window.showLoading) window.showLoading(true);
+    google.script.run.withSuccessHandler(res => {
+      if(window.showLoading) window.showLoading(false);
+      if(res.erro) return alert(res.erro);
+      document.getElementById('wiz-step-1').classList.add('hidden');
+      document.getElementById('wiz-step-2').classList.remove('hidden');
+      document.getElementById('ai-analysis-box').innerHTML = `<strong>${res.studyName}</strong><br><em>${res.studySummary}</em>`;
+      const fields = [{k:'colProntFatos',l:'ID Paciente'},{k:'colMed',l:'Medicamento'},{k:'colDtIni',l:'Data Ref.'}, {k:'colDose24h',l:'Dose Diária'},{k:'colCreat',l:'Creatinina'},{k:'colSexo',l:'Sexo'}];
+      const grid = document.getElementById('grid-mapping'); grid.innerHTML = '';
+      fields.forEach(f => { const val = res.mapping[f.k] || ''; grid.innerHTML += `<div><label style="display:block;font-size:0.75rem;font-weight:700;color:#64748b;margin-bottom:4px;">${f.l}</label><input type="text" name="${f.k}" value="${val}" class="form-input" style="border-color:${val?'#10b981':'#e2e8f0'}"></div>`; });
+      finalConfig = { core: { abaFatos: res.createdSheet }, studySummary: res.studySummary };
+    }).apiMagicSetup(wizFiles.pdf, wizFiles.data, wizFiles.name, sheet);
+  }
+  function saveConfig() {
+    document.querySelectorAll('#form-config input').forEach(i => finalConfig.core[i.name] = i.value);
+    finalConfig.exames = { active: true, aba: finalConfig.core.abaFatos };
+    finalConfig.rams = { active: true, aba: finalConfig.core.abaFatos };
+    const doImport = document.getElementById('chk-import-refs').checked;
+    if(window.showLoading) window.showLoading(true);
+    google.script.run.withSuccessHandler(res => {
+      if(!res.sucesso) { if(window.showLoading) window.showLoading(false); return alert(res.erro); }
+      if(doImport) {
+         google.script.run.withSuccessHandler(resRef => {
+            if(window.showLoading) window.showLoading(false);
+            alert("Sucesso! Sistema pronto."); location.reload();
+         }).apiImportarReferencias();
+      } else { if(window.showLoading) window.showLoading(false); location.reload(); }
+    }).apiSaveConfig(finalConfig);
+  }
+</script>
