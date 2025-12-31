@@ -1,0 +1,166 @@
+<style>
+  /* Layout Específico */
+  .farm-container { display: grid; grid-template-columns: 300px 1fr; height: 100%; font-family: 'Inter', sans-serif; }
+  .farm-sidebar { background: #fff; border-right: 1px solid #e2e8f0; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+  .farm-main { background: #f8fafc; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* Cartão de Paciente */
+  .patient-card { background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 12px; display:none; }
+  .patient-id { font-size: 1.2rem; font-weight: 800; color: #1e3a8a; display: block; margin-bottom: 5px; }
+  .patient-info { font-size: 0.85rem; color: #60a5fa; }
+
+  /* Controles */
+  .control-group { border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; }
+  .control-title { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px; display: block; }
+  .form-input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
+  
+  .tag-select { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag-option { 
+    background: #fff; border: 1px solid #cbd5e1; padding: 5px 10px; 
+    border-radius: 20px; font-size: 0.8rem; cursor: pointer; color: #64748b; transition: 0.2s; 
+  }
+  .tag-option.active { background: #2563eb; color: white; border-color: #2563eb; }
+  
+  .timeline-box { background: white; border-radius: 16px; border: 1px solid #e2e8f0; flex-grow: 1; position: relative; padding: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+  
+  .btn-investigate { width: 100%; padding: 12px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3); transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-investigate:hover { transform: translateY(-2px); }
+</style>
+
+<div class="farm-container">
+  
+  <aside class="farm-sidebar">
+    <div style="font-size:1.1rem; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:8px;">
+      <span class="material-icons-round" style="color:#7c3aed">local_pharmacy</span> Investigador
+    </div>
+
+    <div class="control-group">
+      <label class="control-title">Paciente Alvo (Prontuário)</label>
+      <input type="text" id="farm-pid" class="form-input" placeholder="Ex: 15122195">
+    </div>
+
+    <div class="control-group">
+      <label class="control-title">Marcadores (Exames)</label>
+      <div class="tag-select" id="list-labs">
+        <div class="tag-option active" data-type="Creatinina" onclick="toggleTag(this)">Creatinina</div>
+        <div class="tag-option" data-type="Leucócitos" onclick="toggleTag(this)">Leucócitos</div>
+        <div class="tag-option" data-type="AST/TGO" onclick="toggleTag(this)">AST (TGO)</div>
+      </div>
+    </div>
+
+    <div style="flex-grow:1"></div>
+    <button class="btn-investigate" onclick="runInvestigation()">
+      <span class="material-icons-round">search</span> GERAR TIMELINE
+    </button>
+  </aside>
+
+  <main class="farm-main">
+    <div class="patient-card" id="farm-card">
+      <span class="patient-id" id="card-pid">---</span>
+      <span class="patient-info" id="card-info">Dados reais carregados do sistema.</span>
+    </div>
+
+    <div class="timeline-box">
+      <div id="farm-chart" style="width:100%; height:100%;">
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#94a3b8;">
+          <span class="material-icons-round" style="font-size:3rem; margin-bottom:10px; opacity:0.3;">timeline</span>
+          Insira um Prontuário para ver a história.
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  let currentData = null; // Guarda dados carregados
+
+  function toggleTag(el) {
+    el.classList.toggle('active');
+    if(currentData) updateChart(); // Atualiza gráfico se já houver dados
+  }
+
+  function runInvestigation() {
+    const pid = document.getElementById('farm-pid').value;
+    if(!pid) return alert("Digite um número de Prontuário.");
+    
+    if(window.showLoading) window.showLoading(true);
+
+    google.script.run.withSuccessHandler(res => {
+      if(window.showLoading) window.showLoading(false);
+      
+      if(!res.sucesso) return alert(res.erro);
+      if(res.data.meds.length === 0 && res.data.exams.length === 0) return alert("Nenhum dado encontrado para este paciente.");
+
+      currentData = res.data;
+      
+      // Atualiza Info
+      document.getElementById('farm-card').style.display = 'block';
+      document.getElementById('card-pid').innerText = `Paciente: ${pid}`;
+      
+      updateChart();
+
+    }).apiGetPatientTimeline(pid);
+  }
+
+  function updateChart() {
+    if(!currentData) return;
+
+    const traces = [];
+    
+    // 1. Trace de Medicamento (Barra)
+    // Agrupa doses por dia (soma)
+    const medMap = {};
+    currentData.meds.forEach(m => {
+      if(!medMap[m.date]) medMap[m.date] = 0;
+      medMap[m.date] += m.dose;
+    });
+    
+    traces.push({
+      x: Object.keys(medMap).sort(),
+      y: Object.values(medMap),
+      name: 'Dose (mg)',
+      type: 'bar',
+      marker: { color: '#8b5cf6', opacity: 0.5 },
+      yaxis: 'y1'
+    });
+
+    // 2. Traces de Exames (Linhas)
+    // Verifica quais tags estão ativas
+    const activeTags = Array.from(document.querySelectorAll('#list-labs .active')).map(el => el.dataset.type);
+    
+    // Agrupa exames por tipo
+    const examsByType = {};
+    currentData.exams.forEach(e => {
+      if(activeTags.includes(e.type)) {
+        if(!examsByType[e.type]) examsByType[e.type] = { x: [], y: [] };
+        examsByType[e.type].x.push(e.date);
+        examsByType[e.type].y.push(e.value);
+      }
+    });
+
+    const colors = {'Creatinina': '#ef4444', 'Leucócitos': '#10b981', 'AST/TGO': '#f59e0b'};
+
+    Object.keys(examsByType).forEach(type => {
+      traces.push({
+        x: examsByType[type].x,
+        y: examsByType[type].y,
+        name: type,
+        type: 'scatter',
+        mode: 'lines+markers',
+        line: { color: colors[type] || '#333', width: 3 },
+        yaxis: 'y2'
+      });
+    });
+
+    const layout = {
+      title: 'Timeline Clínica',
+      xaxis: { title: 'Data', type: 'date' },
+      yaxis: { title: 'Dose (mg)', side: 'left', showgrid: false },
+      yaxis2: { title: 'Valor Laboratorial', overlaying: 'y', side: 'right', showgrid: true },
+      legend: { orientation: 'h', y: 1.1 },
+      margin: { r: 50, l: 50, t: 50, b: 50 }
+    };
+
+    Plotly.newPlot('farm-chart', traces, layout, {responsive:true});
+  }
+</script>
