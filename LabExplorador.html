@@ -1,1 +1,1080 @@
+<style>
+ 
+  /* --- LAYOUT BASE --- */
+  .exp-container { display: grid; grid-template-columns: 280px 1fr; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; }
+  .exp-options { background: #fff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow-y: auto; z-index: 20; }
+  .exp-canvas { background: #f1f5f9; padding: 20px; display: flex; flex-direction: column; gap: 20px; position: relative; overflow-y: auto; }
+  
+  /* ELEMENTOS DE UI */
+  .opt-header { padding: 20px; border-bottom: 1px solid #f1f5f9; font-weight: 800; color: #1e293b; display:flex; align-items:center; gap:8px; font-size:1.1rem; }
+  
+  .panel-tabs { display: flex; padding: 10px 10px 0; gap: 2px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+  .tab-btn { flex: 1; padding: 10px 5px; font-size: 0.8rem; font-weight: 600; color: #64748b; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s; text-align: center; }
+  .tab-btn:hover { color: #2563eb; background: #eff6ff; }
+  .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; background: #fff; }
+  .tab-content { padding: 20px; display: none; animation: fadeIn 0.3s; }
+  .tab-content.active { display: block; }
 
+  /* FORMS */
+  .form-group { margin-bottom: 15px; }
+  .form-label { display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 5px; text-transform: uppercase; }
+  .form-select, .form-input { width: 100%; padding: 8px 10px; font-size: 0.9rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; outline: none; box-sizing: border-box; }
+  .form-select:focus { border-color: #2563eb; }
+  .color-input { width: 100%; height: 40px; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; padding: 2px; background: #fff; }
+
+  /* BOTÕES */
+  .btn-run { width: 100%; padding: 12px; margin-top: 10px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: 0.1s; }
+  .btn-run:active { transform: scale(0.98); }
+  
+  .btn-stack { background: white; border: 1px solid #cbd5e1; color: #475569; padding: 8px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; display: flex; justify-content: center; gap: 5px; font-size: 0.85rem; margin-top: 8px; }
+  .btn-stack:hover { border-color: #94a3b8; color: #1e293b; background: #f8fafc; }
+  
+  /* BOTÃO MÁGICO */
+  .btn-magic { 
+    width: 100%; padding: 12px; margin-top: 20px; 
+    background: linear-gradient(135deg, #7c3aed, #db2777); 
+    color: white; border: none; border-radius: 8px; font-weight: 700; 
+    cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; 
+    box-shadow: 0 4px 10px rgba(219, 39, 119, 0.3); transition: transform 0.1s;
+  }
+  .btn-magic:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(219, 39, 119, 0.4); }
+  .btn-magic:active { transform: scale(0.98); }
+
+  .chk-wrapper { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; font-size: 0.9rem; color: #334155; }
+  .chk-wrapper:hover { color: #2563eb; }
+  .chk-wrapper input { accent-color: #2563eb; width: 16px; height: 16px; cursor: pointer; }
+
+  /* ÁREA DE VISUALIZAÇÃO */
+  .view-container { flex-grow: 1; display: flex; flex-direction: column; min-height: 400px; position: relative; }
+
+  /* MODO 1: GRÁFICO MANUAL */
+  .chart-box { 
+    background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+    border: 1px solid #e2e8f0; position: absolute; top:0; left:0; right:0; bottom:0; overflow: hidden; 
+    display:flex; flex-direction:column; 
+  }
+  #main-chart { flex:1; width:100%; height:100%; }
+
+  /* MODO 2: DASHBOARD AUTO (GRID) */
+  .dashboard-grid { 
+    display: none; 
+    grid-template-columns: 1fr 1fr; 
+    grid-template-rows: 1fr 1fr; 
+    gap: 15px; height: 100%; width: 100%;
+    position: absolute; top:0; left:0;
+  }
+  .dash-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 10px; position:relative; display:flex; flex-direction:column; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+  .dash-title { font-size: 0.75rem; font-weight: 800; color: #64748b; margin-bottom: 5px; text-transform: uppercase; padding-left: 5px; border-left: 3px solid #7c3aed; }
+
+  /* KPIs */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; height: 80px; flex-shrink: 0; }
+  .kpi-card { background: white; border-radius: 10px; border: 1px solid #e2e8f0; padding: 15px; display: flex; flex-direction: column; justify-content: center; }
+  .kpi-val { font-size: 1.5rem; font-weight: 800; color: #1e293b; }
+  .kpi-label { font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+
+  /* ORÁCULO */
+  .oracle-fab { position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 10px 25px rgba(124, 58, 237, 0.4); display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: all 0.3s; z-index: 50; }
+  .oracle-window { position: absolute; bottom: 100px; right: 30px; width: 350px; height: 450px; background: white; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; display: flex; flex-direction: column; transform-origin: bottom right; transform: scale(0); opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 50; overflow: hidden; }
+  .oracle-window.open { transform: scale(1); opacity: 1; pointer-events: all; }
+  .oracle-header { background: linear-gradient(135deg, #4f46e5, #7c3aed); padding: 15px; color: white; display: flex; align-items: center; justify-content: space-between; }
+  .oracle-body { flex: 1; padding: 15px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 10px; }
+  .chat-bubble { padding: 10px 15px; border-radius: 12px; font-size: 0.9rem; line-height: 1.4; max-width: 85%; }
+  .chat-user { background: #eff6ff; color: #1e3a8a; align-self: flex-end; border-bottom-right-radius: 2px; border: 1px solid #bfdbfe; }
+  .chat-bot { background: white; color: #334155; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+  .oracle-input-area { padding: 10px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; }
+  .oracle-input { flex: 1; border: 1px solid #cbd5e1; border-radius: 20px; padding: 8px 15px; font-size: 0.9rem; outline: none; }
+  .oracle-send { background: #7c3aed; color: white; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+  /* DRILL-DOWN MODAL CORRIGIDO */
+  .drill-modal { position: fixed; top: 50px; left: 50%; transform: translateX(-50%); width: 900px; max-width: 95%; max-height: 85vh; border-radius: 12px; border: none; padding: 0; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); font-family: 'Inter', sans-serif; display:none; flex-direction: column; z-index: 3000; overflow: hidden; }
+  .drill-modal[open] { display:flex; }
+  .drill-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(2px); z-index: 2999; display:none; }
+  .drill-header { padding: 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+  .drill-title { margin: 0; color: #1e293b; font-size: 1.2rem; font-weight:800; }
+  .drill-subtitle { font-size: 0.85rem; color: #64748b; margin-top:4px; }
+  .drill-body { padding: 0; overflow-y: auto; flex:1; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .data-table th { background: #f1f5f9; padding: 12px 15px; text-align: left; font-weight: 700; color: #475569; position: sticky; top: 0; border-bottom: 2px solid #e2e8f0; white-space:nowrap; }
+  .data-table td { padding: 10px 15px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+  .data-table tr:hover { background: #f8fafc; }
+  
+  .val-highlight { color: #2563eb; font-weight: 700; background: #eff6ff; padding: 2px 6px; border-radius: 4px; }
+  .ctx-badge { font-size: 0.75em; color: #64748b; background: #f1f5f9; padding: 2px 5px; border-radius: 4px; border:1px solid #e2e8f0; display:inline-block; margin-right:5px; }
+  
+  .filter-badge { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: none; align-items: center; gap: 10px; font-size: 0.85rem; }
+  .filter-badge.visible { display: flex; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* --- PAINEL DE AUDITORIA (NOVO) --- */
+  .audit-box {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 15px 20px;
+    font-size: 0.85rem;
+    color: #475569;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+  .audit-item { display: flex; flex-direction: column; gap: 4px; }
+  .audit-label { font-weight: 700; text-transform: uppercase; font-size: 0.7rem; color: #94a3b8; letter-spacing: 0.5px; }
+  .audit-val { font-family: 'Courier New', monospace; color: #334155; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; align-self: flex-start; }
+  .audit-formula { color: #059669; font-weight: 600; }
+
+</style>
+
+<div class="exp-container">
+  
+  <aside class="exp-options">
+    <div class="opt-header"><span class="material-icons-round" style="color:#2563eb">tune</span> Controle</div>
+    
+    <div class="panel-tabs">
+      <button class="tab-btn active" onclick="setPanelTab('geral')">Dados</button>
+      <button class="tab-btn" onclick="setPanelTab('estilo')">Estilo</button>
+      <button class="tab-btn" onclick="setPanelTab('camadas')">Camadas</button>
+    </div>
+
+    <div id="tab-geral" class="tab-content active">
+      <div id="active-filter-badge" class="filter-badge" style="display:none;">
+        <span class="material-icons-round" style="color:#10b981">auto_fix_high</span>
+        <div style="flex:1; overflow:hidden;">
+          <div style="font-weight:800;">Filtro IA Ativo</div>
+          <div id="filter-desc" style="font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">...</div>
+        </div>
+        <button onclick="clearOracleFilter()" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:1.2rem;">&times;</button>
+      </div>
+
+      <div class="form-group"><label class="form-label">Fonte de Dados</label><select id="sel-source" class="form-select" onchange="loadCols()"><option>Carregando...</option></select></div>
+      <div class="form-group"><label class="form-label">Eixo X (Agrupador)</label><select id="sel-x" class="form-select" disabled></select></div>
+      <div class="form-group"><label class="form-label">Eixo Y (Métrica)</label><select id="sel-y" class="form-select" disabled><option value="">(Contagem)</option></select></div>
+      <div class="form-group"><label class="form-label">Tipo</label><select id="sel-type" class="form-select"><option value="bar">Barras</option><option value="pie">Pizza</option><option value="scatter">Dispersão</option></select></div>
+      <div class="chk-wrapper" title="Se marcado, calcula a média dos registos de cada paciente antes de agregar."><input type="checkbox" id="chk-agrupar-paciente"><span>Agrupar por Paciente</span></div>
+      
+<div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+  
+  <button class="btn-run" onclick="runAnalysis()" style="width:100%; padding:12px; background:#2563eb; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:8px; font-size:1rem; box-shadow:0 2px 4px rgba(37, 99, 235, 0.2);">
+    <span class="material-icons-round">play_arrow</span> ATUALIZAR GRÁFICO
+  </button>
+
+  <button class="btn-stack" onclick="sendChartToReport()" style="width:100%; padding:8px; background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; border-radius:6px; cursor:pointer; font-weight:600; display:flex; justify-content:center; align-items:center; gap:6px;">
+    📌 Adicionar Visualização ao Relatório
+  </button>
+
+</div>
+
+    <div id="tab-estilo" class="tab-content">
+      <div class="form-group"><label class="form-label">Título</label><input type="text" id="style-title" class="form-input" placeholder="Automático"></div>
+      <div class="form-group"><label class="form-label">Cor</label><input type="color" id="style-color" class="color-input" value="#3b82f6"></div>
+      <div class="form-group"><label class="form-label">Rótulo X</label><input type="text" id="style-xaxis" class="form-input" placeholder="Automático"></div>
+      <div class="form-group"><label class="form-label">Rótulo Y</label><input type="text" id="style-yaxis" class="form-input" placeholder="Automático"></div>
+      <button class="btn-run" onclick="runAnalysis()" style="background:#7c3aed;">APLICAR ESTILO</button>
+    </div>
+
+    <div id="tab-camadas" class="tab-content">
+      <div class="chk-wrapper" style="border-left:4px solid #ef4444; padding:10px;"><input type="checkbox" id="layer-ram"><span>Eventos Adversos (RAM)</span></div>
+      <div class="form-group"><label class="form-label">Medicamento RAM</label><select id="sel-med-ram" class="form-select"></select></div>
+    </div>
+  </aside>
+
+<main class="exp-canvas">
+  
+  <div class="chart-toolbar" style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border:1px solid #cbd5e1; border-radius:10px; margin-bottom:20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span class="material-icons-round" style="font-size:18px; color:#cbd5e1;">info</span>
+        <span id="chart-status" style="color:#64748b; font-size:0.85rem; font-weight:600;">Pronto</span>
+      </div>
+
+      <div style="display:flex; gap:10px; align-items:center;">
+        
+        <button onclick="exportGlobalExcel()" style="background:#fff; border:1px solid #cbd5e1; color:#334155; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px; font-size:0.8rem; box-shadow:0 1px 2px rgba(0,0,0,0.05); white-space:nowrap;">
+          <span class="material-icons-round" style="font-size:16px; color:#10b981;">table_view</span> 
+          Excel Geral
+        </button>
+
+        <button class="btn-magic" onclick="runDashboardAuto()" style="margin:0; background: linear-gradient(135deg, #8b5cf6, #d946ef); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size:0.8rem; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3); white-space:nowrap;">
+           <span class="material-icons-round" style="font-size:16px;">dashboard</span> AUTO
+        </button>
+
+      </div>
+
+  </div>
+    <div class="view-container">
+        <div id="view-single" class="chart-box">
+            <div id="main-chart"></div>
+        </div>
+
+        <div id="view-grid" class="dashboard-grid">
+            <div class="dash-card">
+              <div class="dash-title">DEMOGRAFIA (PACIENTES)</div>
+              <div id="chart-1" style="flex:1;"></div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-title">TOP MEDICAMENTOS</div>
+              <div id="chart-2" style="flex:1;"></div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-title">EVOLUÇÃO TEMPORAL</div>
+              <div id="chart-3" style="flex:1;"></div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-title">DISTRIBUIÇÃO IDADE (PACIENTES)</div>
+              <div id="chart-4" style="flex:1;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-val" id="kpi-n">0</div><div class="kpi-label">Registos</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="kpi-p">0</div><div class="kpi-label">Pacientes</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="kpi-male" style="color:#3b82f6">-</div><div class="kpi-label">Homens</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="kpi-female" style="color:#db2777">-</div><div class="kpi-label">Mulheres</div></div>
+    </div>
+
+    <div class="oracle-fab" onclick="toggleOracle()"><span class="material-icons-round">chat_bubble</span></div>
+    <div class="oracle-window" id="oracle-window">
+      <div class="oracle-header"><span>Oráculo</span><span class="material-icons-round" style="cursor:pointer;" onclick="toggleOracle()">close</span></div>
+      <div class="oracle-body" id="chat-body"><div class="chat-bot chat-bubble">Olá! Posso ajudar a filtrar os dados.</div></div>
+      <div class="oracle-input-area">
+        <input type="text" id="chat-input" class="oracle-input" placeholder="Escreva aqui...">
+        <button id="btn-send-chat" class="oracle-send"><span class="material-icons-round" style="font-size:18px;">send</span></button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="drill-overlay" id="drill-overlay"></div>
+<dialog id="drill-modal" class="drill-modal">
+  <div class="drill-header">
+    <div>
+      <h3 class="drill-title">Detalhes do Grupo</h3>
+      <div id="drill-subtitle" class="drill-subtitle"></div>
+    </div>
+    <button onclick="closeDrillDown()" style="border:none; background:none; font-size:1.5rem; cursor:pointer; color:#94a3b8;">&times;</button>
+  </div>
+  <div class="drill-body">
+    <table class="data-table">
+      <thead id="drill-thead"></thead>
+      <tbody id="drill-table-body"></tbody>
+    </table>
+  </div>
+  <div style="padding:15px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between;">
+    <div style="display:flex; gap:10px;">
+      <button onclick="exportDrillExcel()" style="padding:8px 16px; border-radius:6px; border:1px solid #10b981; background:#ecfdf5; color:#047857; cursor:pointer; font-weight:600;">📥 Excel</button>
+      <button onclick="sendTableToReport()" style="padding:8px 16px; border-radius:6px; border:1px solid #3b82f6; background:#eff6ff; color:#1d4ed8; cursor:pointer; font-weight:600;">📌 Enviar p/ Relatório</button>
+    </div>
+    <button onclick="closeDrillDown()" style="padding:8px 16px; border-radius:6px; border:1px solid #cbd5e1; background:white; cursor:pointer;">Fechar</button>
+  </div>
+</dialog>
+
+<script>
+  let globalChartData = []; 
+  let currentDrillData = []; 
+  let currentAuditInfo = {}; 
+  let currentXCol = "";
+  let activeFilterScript = null;
+  let activeVirtualFields = [];
+  let currentXAxis = null;
+
+  (function init() {
+    google.script.run.withSuccessHandler(res => {
+      const sel = document.getElementById('sel-source');
+      sel.innerHTML = '';
+      if(res.config.core && res.config.core.abaFatos) {
+        sel.add(new Option(`Fatos: ${res.config.core.abaFatos}`, res.config.core.abaFatos));
+        loadCols();
+      } else { sel.innerHTML = '<option>⚠️ Configure no Wizard</option>'; }
+      document.getElementById('chat-input').addEventListener('keyup', e => { if(e.key==='Enter') askOracle(); });
+      document.getElementById('btn-send-chat').addEventListener('click', askOracle);
+      document.getElementById('active-filter-badge').style.display = 'none';
+    }).apiGetInitialState();
+  })();
+
+  function setPanelTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('tab-' + id).classList.add('active');
+  }
+  function toggleOracle() { 
+    const w = document.getElementById('oracle-window'); w.classList.toggle('open');
+    if(w.classList.contains('open')) setTimeout(()=>document.getElementById('chat-input').focus(),300);
+  }
+  function loadCols() {
+    const sheet = document.getElementById('sel-source').value; if(!sheet) return;
+    google.script.run.withSuccessHandler(cols => {
+      let opts = cols.map(c => `<option value="${c}">${c}</option>`).join('');
+      opts += `<optgroup label="⚙️ Auto"><option value="_IDADE_ANOS">Idade (Anos)</option><option value="_PID">ID Paciente</option></optgroup>`;
+      document.getElementById('sel-x').innerHTML='<option value="">-- Selecione --</option>'+opts; document.getElementById('sel-x').disabled=false;
+      document.getElementById('sel-y').innerHTML='<option value="">(Contagem)</option>'+opts; document.getElementById('sel-y').disabled=false;
+    }).apiGetColumns(sheet);
+  }
+  function injectAndSelect(id, val) {
+    if(!val) return; const sel=document.getElementById(id); let found=-1;
+    for(let i=0;i<sel.options.length;i++) {
+      if(String(sel.options[i].value).trim().toUpperCase() === String(val).trim().toUpperCase()){found=i;break;}
+    }
+    if(found===-1){ sel.add(new Option(`✨ ${val}`,val)); sel.value=val; } else { sel.selectedIndex=found; }
+    return true;
+  }
+
+  // --- MODO 1: GRÁFICO MANUAL ---
+  function runAnalysis() {
+    document.getElementById('view-grid').style.display = 'none';
+    document.getElementById('view-single').style.display = 'block';
+
+    const sheet = document.getElementById('sel-source').value;
+    const xCol = document.getElementById('sel-x').value;
+    const yCol = document.getElementById('sel-y').value;
+    const type = document.getElementById('sel-type').value;
+    const isGrouped = document.getElementById('chk-agrupar-paciente').checked;
+    
+    const customTitle = document.getElementById('style-title').value;
+    const customColor = document.getElementById('style-color').value;
+    const customX = document.getElementById('style-xaxis').value;
+    const customY = document.getElementById('style-yaxis').value;
+
+    currentXAxis = xCol;
+
+    if(!xCol) return alert("Selecione o Eixo X.");
+    
+    const btn = document.querySelector('.btn-run');
+    btn.innerHTML = '⏳ Calculando...'; btn.disabled = true;
+
+    let colsNeed = [xCol, '_PID', 'PRONTUARIO', 'DT_REFERENCIA', 'MEDICAMENTO', '_IDADE_ANOS', '_SEXO']; 
+    if(yCol) colsNeed.push(yCol);
+    colsNeed = [...new Set(colsNeed)];
+
+    google.script.run
+      .withFailureHandler(err => {
+         btn.innerHTML = '⚠️ Erro Fatal'; btn.disabled = false;
+         alert("Ocorreu um erro de conexão ou timeout:\n" + err.message);
+      })
+      .withSuccessHandler(res => {
+        if(!res.sucesso) {
+           btn.innerHTML = '⚠️ Erro Dados'; btn.disabled = false;
+           return alert("Erro ao processar dados:\n" + res.erro);
+        }
+        
+        btn.innerHTML = '<span class="material-icons-round">play_arrow</span> ATUALIZAR'; 
+        btn.disabled = false;
+      
+        let data = res.dados;
+        globalChartData = data; 
+
+        try { Plotly.purge('main-chart'); } catch(e){}
+
+        if(isGrouped) {
+          const groups = {};
+          data.forEach(r => {
+            const pid = r['_PID'];
+            if(!groups[pid]) groups[pid] = { x:[], y:[], raw:[] };
+            groups[pid].x.push(r[xCol]);
+            if(yCol) groups[pid].y.push(r[yCol]);
+            groups[pid].raw.push(r);
+          });
+          
+          data = Object.keys(groups).map(pid => {
+            const g = groups[pid];
+            const vx = g.x[0]; 
+            let vy = yCol ? (g.y.reduce((a,b)=>a+(parseFloat(b)||0),0)/g.y.length) : g.x.length;
+            const obj={}; obj[xCol]=vx; obj[yCol||'COUNT']=vy; obj['_PID']=pid; obj._rawRows = g.raw; 
+            return obj;
+          });
+        }
+
+        let finalX = [], finalY = [];
+        const categories = {};
+        
+        data.forEach(d => {
+          let cat = d[xCol];
+          if(typeof cat === 'number' && type !== 'scatter') cat = Math.floor(cat); 
+          
+          if (!categories[cat]) categories[cat] = { sum: 0, count: 0 };
+          const val = yCol ? (parseFloat(d[yCol])||0) : 1;
+          categories[cat].sum += val; 
+          categories[cat].count++;
+        });
+        
+        finalX = Object.keys(categories).sort();
+        finalY = finalX.map(c => yCol ? (categories[c].sum / categories[c].count) : categories[c].count);
+
+        // Atualiza KPIs para a seleção manual
+        document.getElementById('kpi-n').innerText = res.dados.length;
+        document.getElementById('kpi-p').innerText = new Set(res.dados.map(d=>d['_PID'])).size;
+        document.getElementById('kpi-male').innerText = '-';
+        document.getElementById('kpi-female').innerText = '-';
+
+        const trace = {
+          x: finalX, y: finalY,
+          type: type==='scatter'?'scatter':(type==='pie'?'pie':'bar'),
+          mode: type==='scatter' ? 'markers' : undefined,
+          name: yCol ? 'Média' : 'Contagem',
+          marker: {color: customColor || '#3b82f6', size: type==='scatter' ? 10 : undefined, opacity: 0.7},
+          text: finalY.map(v => typeof v === 'number' ? v.toFixed(1) : v),
+          textposition: 'auto'
+        };
+        
+        if(type==='pie') { trace.labels=trace.x; trace.values=trace.y; delete trace.x; delete trace.y; }
+
+        const layout = { 
+          title: customTitle || `${yCol||'Contagem'} por ${xCol}` + (isGrouped ? " (Por Paciente)" : ""),
+          xaxis: { title: customX || xCol, automargin: true },
+          yaxis: { title: customY || (yCol ? `Média de ${yCol}` : 'Quantidade') },
+          hovermode: 'closest',
+          margin: {t:40, b:80, l:50, r:20},
+          autosize: true
+        };
+        
+        Plotly.newPlot('main-chart', [trace], layout, {responsive:true});
+        
+        const plotDiv = document.getElementById('main-chart');
+        plotDiv.removeAllListeners('plotly_click'); 
+        plotDiv.on('plotly_click', function(data){
+          const point = data.points[0];
+          const clickedLabel = type==='pie' ? point.label : point.x;
+          openDrillDown(clickedLabel, xCol, yCol, isGrouped);
+        });
+
+    }).apiGetRawExplorerData(sheet, colsNeed, activeFilterScript, activeVirtualFields);
+  }
+
+  // --- MODO 2: SMART DASHBOARD (IA + DADOS) ---
+  function runDashboardAuto() {
+    document.getElementById('view-single').style.display = 'none';
+    document.getElementById('view-grid').style.display = 'grid';
+    
+    // Feedback Visual
+    const btn = document.querySelector('.btn-magic');
+    const oldTxt = btn.innerHTML;
+    btn.innerHTML = '⏳ IA ANALISANDO...'; btn.disabled = true;
+
+    // 1. Carrega Configuração e Dados
+    google.script.run.withSuccessHandler(state => {
+       const config = state.config;
+       const smartPlan = config.smartCharts || []; // Pega o plano da IA (se houver)
+       const mapping = config.core || {};
+       
+       // Se não houver plano IA, criamos um default robusto
+       const chartsToRender = (smartPlan.length === 4) ? smartPlan : [
+          { title: "DEMOGRAFIA (SEXO)", type: "pie", x: "colSexo" },
+          { title: "TOP MEDICAMENTOS", type: "bar", x: "colMed" },
+          { title: "EVOLUÇÃO TEMPORAL", type: "line", x: "colDtIni" },
+          { title: "DISTRIBUIÇÃO ETÁRIA", type: "histogram", x: "_IDADE_ANOS" }
+       ];
+
+       // Resolve os nomes reais das colunas
+       // (A IA devolve chaves abstratas 'colCreat', nós traduzimos para 'CREATININA_VALOR')
+       const realCols = [];
+       chartsToRender.forEach(c => {
+          // Tenta mapear chave -> coluna real. Se não for chave, usa o nome direto.
+          c.realX = mapping[c.x] || c.x; 
+          c.realY = mapping[c.y] || c.y;
+          
+          // Casos especiais virtuais
+          if (c.x === '_IDADE_ANOS' || c.x === '_SEXO' || c.x === '_PID') c.realX = c.x;
+          
+          if (c.realX) realCols.push(c.realX);
+          if (c.realY) realCols.push(c.realY);
+       });
+
+       // Adiciona colunas obrigatórias
+       realCols.push('_PID', '_SEXO', '_IDADE_ANOS', 'DT_REFERENCIA'); 
+       
+       // 2. Busca os Dados
+       const sheet = document.getElementById('sel-source').value;
+       
+       google.script.run.withSuccessHandler(res => {
+          btn.innerHTML = oldTxt; btn.disabled = false;
+          
+          if(!res.sucesso) return alert(res.erro);
+          globalChartData = res.dados; 
+          
+          // Atualiza KPIs
+          updateSmartKPIs(res.dados);
+
+          // 3. Renderiza os 4 Gráficos do Plano
+          chartsToRender.forEach((plan, idx) => {
+             const divId = `chart-${idx+1}`;
+             const titleDiv = document.querySelector(`#${divId}`).parentNode.querySelector('.dash-title');
+             if(titleDiv) titleDiv.innerText = plan.title; // Atualiza título sugerido pela IA
+             
+             renderSmartChart(divId, res.dados, plan);
+          });
+
+       }).apiGetRawExplorerData(sheet, [...new Set(realCols)], null, []);
+
+    }).apiGetInitialState();
+  }
+
+  // --- RENDERIZADOR INTELIGENTE (Adapta-se ao pedido da IA) ---
+  function renderSmartChart(divId, data, plan) {
+     const type = plan.type;
+     const xCol = plan.realX;
+     const yCol = plan.realY;
+
+     // 1. Preparação dos Dados
+     let xVal = [], yVal = [];
+     
+     if (type === 'scatter' || type === 'line') {
+        // Dados brutos (sem agregação)
+        xVal = data.map(d => d[xCol]);
+        yVal = yCol ? data.map(d => d[yCol]) : data.map(d => 1);
+        
+        // Se for linha temporal, precisamos ordenar e contar
+        if (type === 'line' && (xCol.includes('DT') || xCol.includes('DATA'))) {
+           const timeData = getDateTrend(data, xCol);
+           xVal = timeData.dates;
+           yVal = timeData.counts;
+        }
+     } else if (type === 'histogram' || type === 'box') {
+        xVal = data.map(d => d[xCol]); // Array direto
+     } else {
+        // Agregação padrão (Bar/Pie)
+        const groups = {};
+        data.forEach(r => {
+           let k = r[xCol] || 'N/D';
+           if(!groups[k]) groups[k]=0;
+           groups[k]++;
+        });
+        // Top 10 para não poluir
+        const sorted = Object.entries(groups).sort((a,b)=>b[1]-a[1]).slice(0,10);
+        xVal = sorted.map(i=>i[0]);
+        yVal = sorted.map(i=>i[1]);
+     }
+
+     // 2. Configuração do Traço Plotly
+     let trace = {};
+     let layout = { margin: {t:20, b:30, l:40, r:10}, autosize: true, showlegend: false };
+
+     if (type === 'pie') {
+        trace = { labels: xVal, values: yVal, type: 'pie', marker: {colors: ['#3b82f6','#db2777','#10b981','#f59e0b']} };
+        layout.showlegend = true;
+     } else if (type === 'bar') {
+        trace = { x: xVal, y: yVal, type: 'bar', marker: {color: '#8b5cf6'} };
+     } else if (type === 'scatter') {
+        trace = { x: xVal, y: yVal, mode: 'markers', type: 'scatter', marker: {color: '#3b82f6', opacity: 0.6} };
+     } else if (type === 'line') {
+        trace = { x: xVal, y: yVal, mode: 'lines+markers', type: 'scatter', line: {color: '#10b981', width: 3} };
+     } else if (type === 'histogram') {
+        trace = { x: xVal, type: 'histogram', marker: {color: '#f59e0b'} };
+     } else if (type === 'box') {
+        trace = { y: xVal, type: 'box', boxpoints: 'outliers', marker: {color: '#6366f1'} };
+     }
+
+     Plotly.newPlot(divId, [trace], layout, {responsive: true, displayModeBar: false});
+     
+     // Drill-down Link
+     document.getElementById(divId).on('plotly_click', d => {
+        const pt = d.points[0];
+        const label = (type === 'pie') ? pt.label : pt.x;
+        // Evita abrir drilldown em histogramas/linhas complexas por enquanto
+        if (type !== 'histogram' && type !== 'line') openDrillDown(label, xCol);
+     });
+  }
+
+  function updateSmartKPIs(data) {
+     document.getElementById('kpi-n').innerText = data.length;
+     document.getElementById('kpi-p').innerText = new Set(data.map(d=>d['_PID'])).size;
+     // Tenta calcular sexo se existir
+     const males = data.filter(d => d['_SEXO'] === 'M').length;
+     const females = data.filter(d => d['_SEXO'] === 'F').length;
+     document.getElementById('kpi-male').innerText = males || '-';
+     document.getElementById('kpi-female').innerText = females || '-';
+  }
+
+  // --- HELPERS DO DASHBOARD ---
+  function renderPlotly(divId, data, xCol, yCol, type, title) {
+    const groups = {};
+    data.forEach(r => {
+       let key = r[xCol] || 'N/D';
+       if (!groups[key]) groups[key] = 0;
+       groups[key]++;
+    });
+    const labels = Object.keys(groups);
+    const values = Object.values(groups);
+    let trace = { x: labels, y: values, type: type === 'pie' ? 'pie' : 'bar' };
+    if (type === 'pie') { trace = { labels: labels, values: values, type: 'pie', marker: {colors: ['#3b82f6','#db2777']} }; }
+    
+    const layout = { margin: {t:20, b:30, l:30, r:10}, autosize: true, showlegend: type==='pie' };
+    Plotly.newPlot(divId, [trace], layout, {responsive: true, displayModeBar: false});
+    
+    // Drill Down (Assume agrupado para charts de pacientes)
+    document.getElementById(divId).on('plotly_click', (d) => {
+       const pt = d.points[0];
+       const label = type === 'pie' ? pt.label : pt.x;
+       // Se o chart for de pacientes únicos (Sexo/Idade), ativa agrupamento no drill
+       const isPatientChart = (xCol === '_SEXO' || xCol === '_IDADE_ANOS');
+       openDrillDown(label, xCol, null, isPatientChart);
+    });
+  }
+
+  function renderSimpleBar(divId, x, y, orientation) {
+    const trace = {
+       x: orientation==='h' ? y : x, y: orientation==='h' ? x : y,
+       type: 'bar', orientation: orientation,
+       marker: { color: '#8b5cf6' }
+    };
+    Plotly.newPlot(divId, [trace], {margin:{t:10,l:100,r:20,b:30}}, {responsive:true, displayModeBar:false});
+  }
+
+  function renderLineChart(divId, x, y) {
+    const trace = { x: x, y: y, type: 'scatter', mode: 'lines+markers', line: {color:'#10b981', width:3} };
+    Plotly.newPlot(divId, [trace], {margin:{t:10,l:30,r:10,b:30}}, {responsive:true, displayModeBar:false});
+  }
+
+  function renderHistogram(divId, data, col) {
+    const trace = { x: data.map(d=>d[col]), type: 'histogram', marker: {color:'#f59e0b'} };
+    Plotly.newPlot(divId, [trace], {margin:{t:10,l:30,r:10,b:30}}, {responsive:true, displayModeBar:false});
+  }
+
+  function getTopN(data, col, n) {
+    const counts = {};
+    data.forEach(r => { if(r[col]) counts[r[col]] = (counts[r[col]]||0)+1; });
+    const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,n);
+    return { labels: sorted.map(i=>i[0]), values: sorted.map(i=>i[1]) };
+  }
+
+  function getDateTrend(data, col) {
+    const counts = {};
+    data.forEach(r => {
+       if(r[col]) {
+          let d = new Date(r[col]);
+          if(!isNaN(d)) {
+             let key = d.toISOString().slice(0,7); // YYYY-MM
+             counts[key] = (counts[key]||0)+1;
+          }
+       }
+    });
+    const sortedKeys = Object.keys(counts).sort();
+    return { dates: sortedKeys, counts: sortedKeys.map(k=>counts[k]) };
+  }
+
+function openDrillDown(filterVal, xCol, yCol, isGrouped) {
+    const modal = document.getElementById('drill-modal');
+    const overlay = document.getElementById('drill-overlay');
+    
+    document.getElementById('drill-subtitle').innerText = `Filtro Ativo: ${xCol} == "${filterVal}"`;
+    currentXCol = xCol;
+    modal.style.display = 'flex'; modal.showModal(); overlay.style.display = 'block';
+
+    // 1. Filtra Dados
+    let rowsToShow = globalChartData.filter(r => {
+        let v = r[xCol];
+        if(typeof v === 'number') v = Math.floor(v); 
+        return String(v) == String(filterVal);
+    });
+
+    // 2. Estatísticas & Deduplicação
+    let rawCount = rowsToShow.length;
+    let uniqueCount = rawCount;
+    if (isGrouped) {
+       const uniqueMap = new Map();
+       rowsToShow.forEach(r => { if (!uniqueMap.has(r['_PID'])) uniqueMap.set(r['_PID'], r); });
+       rowsToShow = Array.from(uniqueMap.values());
+       uniqueCount = rowsToShow.length;
+    }
+    currentDrillData = rowsToShow; 
+
+    // 3. Cálculos (CORRIGIDO PARA M/F)
+    let ages = rowsToShow.map(r => r['_IDADE_ANOS']).filter(n => n > 0);
+    let avgAge = ages.length ? (ages.reduce((a,b)=>a+b,0)/ages.length).toFixed(2) : '0';
+    let minAge = ages.length ? Math.min(...ages).toFixed(1) : '-';
+    let maxAge = ages.length ? Math.max(...ages).toFixed(1) : '-';
+    
+    // Contagem de Sexo Robusta (Resolve o problema do M:0 F:0)
+    let sexDist = { M: 0, F: 0, Outros: 0 };
+    rowsToShow.forEach(r => {
+       // Tenta pegar de _SEXO (calculado), senão tenta da coluna original (SEXO ou GENERO)
+       let s = r['_SEXO'] || r['SEXO'] || r['GENERO'] || '-';
+       s = String(s).toUpperCase().trim();
+       
+       // Normaliza para contagem (Aceita "M", "MASC", "MASCULINO")
+       if (s === 'M' || s.startsWith('MASC')) sexDist.M++;
+       else if (s === 'F' || s.startsWith('FEM')) sexDist.F++;
+       else sexDist.Outros++;
+    });
+
+    // 4. LÓGICA & TRADUÇÃO (AQUI ESTÁ A MUDANÇA)
+    let iaPrompt = document.getElementById('filter-desc') ? document.getElementById('filter-desc').innerText : "Nenhum";
+    let iaFormula = (activeFilterScript && activeFilterScript !== 'true') ? activeFilterScript : "Nenhuma (Todos os dados)";
+    
+    // Traduz para "Humanês/Excel"
+    let excelFriendly = translateJsToHuman(iaFormula);
+
+    // 5. PREPARA O DOSSIÊ DETALHADO
+    currentAuditInfo = {
+       "--- CONTEXTO CLÍNICO ---": "",
+       "Pergunta Original": iaPrompt,
+       "População": `${uniqueCount} Pacientes (de ${rawCount} registos brutos)`,
+       
+       "--- LÓGICA DE FILTRAGEM ---": "",
+       "Fórmula (Lógica Excel)": excelFriendly,  // <--- PRIMEIRO A VERSÃO LEGÍVEL
+       "Código Original (Server)": iaFormula,    // <--- DEPOIS O CÓDIGO TÉCNICO
+       "Nota Técnica": "O código original está em JavaScript (Google Apps Script). A lógica Excel acima é uma tradução aproximada para conferência.",
+       
+       "--- ESTATÍSTICAS DO GRUPO ---": "",
+       "Idade Média": `${avgAge} anos`,
+       "Distribuição Sexo": `M: ${sexDist.M} | F: ${sexDist.F}`,
+       
+       "--- RASTREABILIDADE ---": "",
+       "Data Geração": new Date().toLocaleString(),
+       "Sistema": "EUM Manager v6.7"
+    };
+
+    // 6. RENDERIZA PAINEL (VISUAL)
+    let auditDiv = document.getElementById('drill-audit-panel');
+    if (!auditDiv) {
+       auditDiv = document.createElement('div');
+       auditDiv.id = 'drill-audit-panel';
+       auditDiv.className = 'audit-box';
+       document.querySelector('.drill-header').after(auditDiv);
+    }
+    auditDiv.innerHTML = `
+      <div class="audit-item"><span class="audit-label">Estatísticas</span>
+        <div>Média Idade: <span class="audit-val">${avgAge}</span></div>
+        <div style="margin-top:4px;">Sexo: <span class="audit-val" style="color:#2563eb">M:${sexDist.M}</span> <span class="audit-val" style="color:#db2777">F:${sexDist.F}</span></div>
+      </div>
+      <div class="audit-item"><span class="audit-label">Lógica Aplicada</span>
+        <div style="font-weight:bold; color:#059669; font-size:0.8rem; margin-bottom:4px;">${excelFriendly.substring(0,50)}${excelFriendly.length>50?'...':''}</div>
+        <div style="font-family:monospace; color:#64748b; font-size:0.7rem;">Ref: ${iaFormula.substring(0,30)}...</div>
+      </div>`;
+
+    // 7. MONTA TABELA (USANDO SAFEDATE)
+    const tbody = document.getElementById('drill-table-body');
+    const thead = document.getElementById('drill-thead');
+    tbody.innerHTML = '';
+
+    let cols = ['ID', 'Data', xCol]; 
+    if(yCol) cols.push(yCol);
+    cols = cols.filter(c => c !== 'SEXO' && c !== 'GENERO'); 
+    
+    let headHtml = `<tr><th>ID</th><th>Sexo</th><th>Data</th><th>${xCol}</th>`;
+    if(yCol) headHtml += `<th>${yCol}</th>`;
+    headHtml += `<th>Contexto</th></tr>`;
+    thead.innerHTML = headHtml;
+
+    if (rowsToShow.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Vazio.</td></tr>'; return; }
+
+    rowsToShow.slice(0, 100).forEach(r => {
+       let pid = r['PRONTUARIO'] || r['_PID'] || '-';
+       let sex = r['_SEXO'] || '-';
+       // ★ CORREÇÃO DA DATA NA TABELA VISUAL
+       let dt = safeDate(r['DT_REFERENCIA']); 
+       
+       let sexHtml = sex === 'M' ? `<span style="color:#2563eb;background:#eff6ff;padding:2px 6px;border-radius:4px;font-weight:bold">M</span>` : (sex === 'F' ? `<span style="color:#db2777;background:#fce7f3;padding:2px 6px;border-radius:4px;font-weight:bold">F</span>` : sex);
+       let valX = `<span class="val-highlight">${r[xCol]}</span>`;
+       let valY = yCol ? (typeof r[yCol]==='number' ? r[yCol].toFixed(2) : r[yCol]) : '-';
+       let ctx = '';
+       if(r['MEDICAMENTO']) ctx += `<span class="ctx-badge">${r['MEDICAMENTO']}</span>`;
+
+       let row = `<tr><td>${pid}</td><td>${sexHtml}</td><td>${dt}</td><td>${valX}</td>`;
+       if(yCol) row += `<td>${valY}</td>`;
+       row += `<td>${ctx}</td></tr>`;
+       tbody.innerHTML += row;
+    });
+  }
+  // --- EXPORTAÇÃO EXCEL "DOSSIÊ COMPLETO" ---
+  function exportDrillExcel() {
+    if (typeof XLSX === 'undefined') return alert("Erro: Biblioteca Excel não carregada.");
+    
+    // Verificações de segurança
+    if (!currentDrillData || currentDrillData.length === 0) return alert("Sem dados selecionados.");
+    if (!globalChartData || globalChartData.length === 0) return alert("Sem dados globais.");
+    
+    try {
+      const wb = XLSX.utils.book_new();
+
+      // ---------------------------------------------------------
+      // 1. ABA AUDITORIA (Capa do Relatório)
+      // ---------------------------------------------------------
+      const auditRows = Object.keys(currentAuditInfo).map(key => ({
+         "Parâmetro": key,
+         "Valor": currentAuditInfo[key]
+      }));
+      const wsAudit = XLSX.utils.json_to_sheet(auditRows);
+      wsAudit['!cols'] = [{wch: 25}, {wch: 50}]; // Ajusta largura
+      XLSX.utils.book_append_sheet(wb, wsAudit, "1. Resumo_Auditoria");
+
+      // ---------------------------------------------------------
+      // 2. ABA DADOS SELECIONADOS (O Filtro Atual)
+      // ---------------------------------------------------------
+      // Formata os dados para ficarem bonitos no Excel
+      const selectedFormatted = formatDataForExcel(currentDrillData);
+      const wsSelected = XLSX.utils.json_to_sheet(selectedFormatted);
+      XLSX.utils.book_append_sheet(wb, wsSelected, "2. Seleção_Atual");
+
+      // ---------------------------------------------------------
+      // 3. ABA DADOS BRUTOS TOTAIS (O Universo Completo)
+      // ---------------------------------------------------------
+      // Usa o 'globalChartData' que contém TUDO o que veio do servidor antes do clique
+      const globalFormatted = formatDataForExcel(globalChartData);
+      const wsGlobal = XLSX.utils.json_to_sheet(globalFormatted);
+      XLSX.utils.book_append_sheet(wb, wsGlobal, "3. Dados_Brutos_Geral");
+
+      // Salva o Arquivo
+      XLSX.writeFile(wb, "EUM_Dossie_Completo.xlsx");
+
+    } catch(e) { alert("Erro ao gerar Excel: " + e.message); }
+  }
+
+  // Helper para limpar os dados antes de ir para o Excel
+  // (Remove colunas de sistema e formata datas)
+ function formatDataForExcel(dataList) {
+     return dataList.map(r => {
+        const clean = {};
+        // Colunas Fixas
+        clean['ID_PACIENTE'] = r['PRONTUARIO'] || r['_PID'];
+        clean['SEXO'] = r['_SEXO'] || '-';
+        clean['IDADE'] = r['_IDADE_ANOS'] || 0;
+        
+        // ★ CORREÇÃO DA DATA NO EXCEL
+        clean['DATA_REF'] = safeDate(r['DT_REFERENCIA']);
+        
+        if(currentXAxis) clean[`EIXO_X (${currentXAxis})`] = r[currentXAxis];
+        
+        // Restante
+        Object.keys(r).forEach(k => { 
+           if(!k.startsWith('_') && !['PRONTUARIO','DT_REFERENCIA', currentXAxis].includes(k)) {
+              clean[k] = r[k]; 
+           }
+        });
+        return clean;
+     });
+  }
+  function sendChartToReport() {
+     const div = document.getElementById('main-chart');
+     if(!div.data) return alert("Sem gráfico.");
+
+     let aiText = 'Nenhuma análise automática disponível.';
+     const botMsgs = document.querySelectorAll('.chat-bot');
+     if (botMsgs.length > 0) {
+        aiText = botMsgs[botMsgs.length - 1].innerText;
+     }
+
+     if(window.addToReport) {
+        window.addToReport({
+           type: 'chart',
+           title: document.querySelector('.gtitle')?.innerHTML || 'Gráfico Explorador',
+           source: 'Explorador',
+           data: div.data,
+           layout: div.layout,
+           aiText: aiText 
+        });
+     }
+  }
+
+ // --- FUNÇÃO DE ENVIAR PARA O RELATÓRIO (VERSÃO UNIVERSAL) ---
+  function sendTableToReport() {
+    if (!currentDrillData || currentDrillData.length === 0) return alert("Sem dados para enviar.");
+
+    // 1. PREPARAÇÃO DOS DADOS (Higienização)
+    const cleanData = currentDrillData.map(r => {
+        const row = {};
+        
+        // IDs e Sexo
+        row["ID"] = r['PRONTUARIO'] || r['_PID'] || '-';
+        row["Sexo"] = r['_SEXO'] || '-'; 
+        
+        // Data (Segura)
+        row["Data"] = (typeof safeDate === 'function') ? safeDate(r['DT_REFERENCIA']) : (r['DT_REFERENCIA'] || '-');
+        
+        // Coluna do Filtro (Sem duplicar)
+        if (typeof currentXCol !== 'undefined' && currentXCol && currentXCol !== 'SEXO' && currentXCol !== 'GENERO' && currentXCol !== 'DATA') {
+           row[currentXCol] = r[currentXCol] || '-';
+        }
+        
+        // Contexto
+        let ctx = (r['MEDICAMENTO'] || '');
+        if (r['_IDADE_ANOS']) ctx += (ctx ? ' | ' : '') + r['_IDADE_ANOS'] + ' anos';
+        row["Contexto"] = ctx || '-';
+
+        return row;
+    });
+
+    // 2. BUSCA DO DESTINO (A CORREÇÃO ESTÁ AQUI)
+    // Tenta encontrar a função 'addToReport' em qualquer lugar possível
+    let targetWindow = null;
+
+    if (window.opener && !window.opener.closed && window.opener.addToReport) {
+        targetWindow = window.opener; // É um Pop-up
+    } else if (window.parent && window.parent.addToReport) {
+        targetWindow = window.parent; // É um iFrame
+    } else if (window.top && window.top.addToReport) {
+        targetWindow = window.top; // É um iFrame aninhado
+    } else if (window.addToReport) {
+        targetWindow = window; // É a mesma janela
+    }
+
+    // 3. ENVIO
+    if (targetWindow) {
+         try {
+             targetWindow.addToReport({
+                type: 'table',
+                title: `Detalhes: ${document.getElementById('drill-subtitle').innerText}`,
+                data: cleanData,
+                source: 'Explorador'
+             });
+             
+             // Feedback Visual
+             const btn = document.querySelector('button[onclick="sendTableToReport()"]');
+             const originalText = btn ? btn.innerText : "📌 Enviar p/ Relatório";
+             if(btn) btn.innerText = "Enviado! ✓";
+             setTimeout(() => { if(btn) btn.innerText = originalText; }, 2000);
+             
+         } catch(e) { alert("Erro ao transferir dados: " + e.message); }
+    } else {
+         // Se falhar tudo, mostra o alerta original
+         alert("Erro de Conexão: O sistema não encontrou a aba 'Relatório' ativa.\nCertifique-se que o painel principal (LabHome) está carregado.");
+    }
+  }
+
+  function exportExplorerToStack() {
+     if(!globalChartData || globalChartData.length===0) return alert("Gere o gráfico primeiro.");
+     if(window.addToStack) window.addToStack('Explorador', 'Dados Explorados', globalChartData, 'val');
+     else alert("Fusão não disponível.");
+  }
+
+  function closeDrillDown() {
+    document.getElementById('drill-modal').close();
+    document.getElementById('drill-modal').style.display = 'none';
+    document.getElementById('drill-overlay').style.display = 'none';
+  }
+
+  function askOracle() {
+    const txt = document.getElementById('chat-input').value.trim();
+    if(!txt) return;
+    addChatBubble(txt, 'user'); document.getElementById('chat-input').value = '';
+    const loadId = addChatBubble("Pensando...", 'bot');
+
+    google.script.run.withSuccessHandler(res => {
+      document.getElementById(loadId).remove();
+      if(res.sucesso) {
+        const cfg = res.config;
+        activeFilterScript = cfg.filter; activeVirtualFields = cfg.virtualFields || [];
+        injectAndSelect('sel-x', cfg.xAxis); injectAndSelect('sel-y', cfg.yAxis || ""); injectAndSelect('sel-type', cfg.chartType);
+        if (cfg.group !== undefined) document.getElementById('chk-agrupar-paciente').checked = !!cfg.group;
+        
+        addChatBubble(`📊 ${cfg.explanation}`, 'bot');
+        
+        if(activeFilterScript && activeFilterScript!=='true') {
+           document.getElementById('active-filter-badge').style.display = 'flex';
+           document.getElementById('filter-desc').innerText = `IA: "${txt}"`;
+        } else document.getElementById('active-filter-badge').style.display = 'none';
+        
+        setTimeout(runAnalysis, 200);
+      } else addChatBubble(`Erro: ${res.erro}`, 'bot');
+    }).apiOracleInterpret(txt, document.getElementById('sel-source').value);
+  }
+  function addChatBubble(txt, type) { const area=document.getElementById('chat-body'); const div=document.createElement('div'); const id='m'+Date.now(); div.id=id; div.className=`chat-bubble chat-${type}`; div.innerHTML=txt; area.appendChild(div); area.scrollTop=area.scrollHeight; return id; }
+  function clearOracleFilter() { activeFilterScript=null; activeVirtualFields=[]; document.getElementById('active-filter-badge').style.display='none'; runAnalysis(); }
+  
+  if(typeof initExploradorModule !== 'undefined') setTimeout(initExploradorModule, 500);
+
+  // --- TRADUTOR DE JAVASCRIPT PARA "HUMANÊS/EXCEL" ---
+  function translateJsToHuman(jsCode) {
+    if (!jsCode || jsCode === 'true' || jsCode.startsWith("Nenhuma")) return "Todos os dados (Sem filtros)";
+    
+    let human = jsCode;
+    
+    // 1. Limpa a sintaxe técnica de coluna: row['COLUNA'] -> [COLUNA]
+    human = human.replace(/row\['(.*?)'\]/g, "[$1]");
+    
+    // 2. Traduz operadores lógicos matemáticos para português/Excel
+    human = human.replace(/&&/g, " E ");
+    human = human.replace(/\|\|/g, " OU ");
+    human = human.replace(/==/g, "=");
+    human = human.replace(/!=/g, "<>");
+    human = human.replace(/>=/g, "Maior ou Igual a ");
+    human = human.replace(/<=/g, "Menor ou Igual a ");
+    human = human.replace(/>/g, "Maior que ");
+    human = human.replace(/</g, "Menor que ");
+    
+    return human;
+  }
+
+  // --- HELPER: CORREÇÃO DE DATAS ---
+  function safeDate(val) {
+    if (!val) return '-';
+    // Se já for um objeto Data real
+    if (val instanceof Date) return val.toLocaleDateString();
+    
+    // Se for string
+    if (typeof val === 'string') {
+       // Se já tiver barras (01/04/2025), devolve direto (evita Invalid Date)
+       if (val.includes('/')) return val; 
+       // Se for ISO (2025-04-01T...), tenta converter
+       if (val.includes('T') || val.includes('-')) {
+          const d = new Date(val);
+          return isNaN(d) ? val : d.toLocaleDateString();
+       }
+    }
+    return val; // Retorna o original se não souber o que fazer
+  }
+
+  // --- EXPORTAÇÃO GLOBAL (O GRÁFICO INTEIRO) ---
+  function exportGlobalExcel() {
+    if (typeof XLSX === 'undefined') return alert("Erro: Biblioteca Excel não carregada.");
+    if (!globalChartData || globalChartData.length === 0) return alert("Ainda não há dados carregados no gráfico.");
+
+    try {
+      const wb = XLSX.utils.book_new();
+
+      // ---------------------------------------------------------
+      // ABA 1: AUDITORIA DO GRÁFICO
+      // ---------------------------------------------------------
+      let prompt = document.getElementById('filter-desc') ? document.getElementById('filter-desc').innerText : "Nenhum";
+      let formula = (activeFilterScript && activeFilterScript !== 'true') ? activeFilterScript : "Nenhuma (Todos os dados)";
+      let excelFriendly = (typeof translateJsToHuman === 'function') ? translateJsToHuman(formula) : formula;
+
+      const auditRows = [
+          { "Parâmetro": "--- CONTEXTO DO GRÁFICO ---", "Valor": "" },
+          { "Parâmetro": "Pergunta (Prompt)", "Valor": prompt },
+          { "Parâmetro": "População Total", "Valor": globalChartData.length + " Registos" },
+          { "Parâmetro": "", "Valor": "" },
+          { "Parâmetro": "--- LÓGICA DE FILTRO GLOBAL ---", "Valor": "" },
+          { "Parâmetro": "Fórmula (Legível)", "Valor": excelFriendly },
+          { "Parâmetro": "Código (Server)", "Valor": formula },
+          { "Parâmetro": "", "Valor": "" },
+          { "Parâmetro": "Data Geração", "Valor": new Date().toLocaleString() }
+      ];
+      
+      const wsAudit = XLSX.utils.json_to_sheet(auditRows);
+      wsAudit['!cols'] = [{wch: 25}, {wch: 60}];
+      XLSX.utils.book_append_sheet(wb, wsAudit, "1. Auditoria_Geral");
+
+      // ---------------------------------------------------------
+      // ABA 2: CONTAGEM AGRUPADA (RESUMO)
+      // ---------------------------------------------------------
+      // Tenta criar um resumo se houver um Eixo X definido
+      if (typeof currentXAxis !== 'undefined' && currentXAxis) {
+          const counts = {};
+          globalChartData.forEach(r => {
+              let val = r[currentXAxis] || "(Vazio)";
+              counts[val] = (counts[val] || 0) + 1;
+          });
+          
+          const summaryData = Object.keys(counts).map(k => ({ "Categoria (Eixo X)": k, "Contagem": counts[k] }));
+          const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+          XLSX.utils.book_append_sheet(wb, wsSummary, "2. Resumo_Agrupado");
+      }
+
+      // ---------------------------------------------------------
+      // ABA 3: DADOS BRUTOS (TODOS)
+      // ---------------------------------------------------------
+      // Usa a função formatDataForExcel que já criamos para limpar datas e IDs
+      let cleanGlobal = globalChartData;
+      if (typeof formatDataForExcel === 'function') {
+          cleanGlobal = formatDataForExcel(globalChartData);
+      }
+      
+      const wsData = XLSX.utils.json_to_sheet(cleanGlobal);
+      XLSX.utils.book_append_sheet(wb, wsData, "3. Dados_Brutos_Completo");
+
+      // Salva
+      XLSX.writeFile(wb, "EUM_Grafico_Completo.xlsx");
+
+    } catch(e) { alert("Erro ao exportar: " + e.message); }
+  }
+</script>
