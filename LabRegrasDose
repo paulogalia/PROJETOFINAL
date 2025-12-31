@@ -1,0 +1,178 @@
+<style>
+  /* Reutilizando estilos do Modal de Referências */
+  dialog#dose-modal {
+    padding: 0; border: none; border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    max-width: 1150px; width: 95%; height: 85vh;
+    background: #fff; animation: slideUp 0.3s ease-out; overflow: hidden;
+  }
+  dialog#dose-modal::backdrop { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+
+  .dose-layout { display: grid; grid-template-columns: 320px 1fr; height: 100%; overflow: hidden; }
+  
+  .dose-sidebar { 
+    background: #f8fafc; border-right: 1px solid #e2e8f0; padding: 25px; 
+    display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+  }
+  .dose-title { font-weight: 800; color: #1e293b; font-size: 1.1rem; margin-bottom: 5px; }
+  
+  .dose-input-group label { display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 3px; }
+  .dose-input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; font-size: 0.9rem; box-sizing: border-box; }
+  
+  .age-row { display: flex; align-items: flex-end; gap: 5px; }
+  .unit-select { width: 70px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f1f5f9; font-size: 0.8rem; }
+
+  .btn-add-dose { 
+    background: #f59e0b; color: white; width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; margin-top: 15px; 
+    display: flex; justify-content: center; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .btn-add-dose:hover { background: #d97706; }
+  .btn-close { margin-top: 10px; background: transparent; border: 1px solid #cbd5e1; color: #64748b; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+
+  /* Tabela */
+  .dose-table-wrapper { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+  .dose-header { padding: 15px 25px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fff; }
+  .table-scroll { overflow-y: auto; flex: 1; background: #fff; }
+  
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { text-align: left; padding: 12px 15px; background: #f8fafc; position: sticky; top: 0; border-bottom: 1px solid #e2e8f0; z-index: 10; color: #64748b; }
+  td { padding: 10px 15px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+  
+  .tag-unit { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; border: 1px solid; }
+  .tag-unit.abs { background: #ecfdf5; color: #047857; border-color: #a7f3d0; } /* mg/dia */
+  .tag-unit.kg { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; } /* mg/kg */
+</style>
+
+<dialog id="dose-modal">
+  <div class="dose-layout">
+    
+    <div class="dose-sidebar">
+      <div><div class="dose-title">💊 Protocolo de Dose</div><p style="font-size:0.75rem; color:#94a3b8; margin:0;">Defina as faixas de segurança.</p></div>
+      
+      <div class="dose-input-group">
+        <label>Medicamento</label>
+        <input type="text" id="dose-med" class="dose-input" placeholder="Ex: Levetiracetam">
+      </div>
+
+      <div class="dose-input-group">
+        <label>Tipo de Dose (Unidade)</label>
+        <select id="dose-unidade" class="dose-input">
+          <option value="mg/dia">Absoluta (mg/dia)</option>
+          <option value="mg/kg/dia">Ponderal (mg/kg/dia)</option>
+          <option value="mg/kg/dose">Por Dose (mg/kg/dose)</option>
+        </select>
+      </div>
+
+      <hr style="border:0; border-top:1px solid #e2e8f0; margin:5px 0;">
+
+      <div class="dose-input-group"><label>Idade Mínima</label>
+        <div class="age-row"><input type="number" id="dose-age-min" class="dose-input" value="0"><select id="dose-unit-min" class="unit-select"><option value="365">Anos</option><option value="30">Meses</option><option value="1">Dias</option></select></div>
+      </div>
+      <div class="dose-input-group"><label>Idade Máxima</label>
+        <div class="age-row"><input type="number" id="dose-age-max" class="dose-input" value="100"><select id="dose-unit-max" class="unit-select"><option value="365">Anos</option><option value="30">Meses</option><option value="1">Dias</option></select></div>
+      </div>
+
+      <hr style="border:0; border-top:1px solid #e2e8f0; margin:5px 0;">
+
+      <div class="dose-input-group"><label>Dose Mínima (Terapêutica)</label><input type="number" id="val-dose-min" class="dose-input" placeholder="0"></div>
+      <div class="dose-input-group"><label>Dose Usual (Alvo)</label><input type="number" id="val-dose-usual" class="dose-input" placeholder="0"></div>
+      <div class="dose-input-group"><label>Dose MÁXIMA (Segurança)</label><input type="number" id="val-dose-max" class="dose-input" placeholder="0" style="border-color:#fca5a5;"></div>
+
+      <div style="flex:1;"></div>
+      <button class="btn-add-dose" onclick="saveRegraDose()"><span>💾</span> Salvar Regra</button>
+      <button class="btn-close" onclick="document.getElementById('dose-modal').close()">Fechar</button>
+    </div>
+
+    <div class="dose-table-wrapper">
+      <div class="dose-header">
+        <span style="font-weight:700; font-size:1rem; color:#334155;">💊 Doses Cadastradas</span>
+        <button onclick="loadRegrasDose()" style="background:white; border:1px solid #cbd5e1; padding:5px 10px; border-radius:6px; cursor:pointer;">🔄</button>
+      </div>
+      <div class="table-scroll">
+        <table id="table-dose">
+          <thead><tr><th>Medicamento</th><th>Faixa Etária</th><th>Unidade</th><th>Min - Usual - Max</th><th style="text-align:right">#</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div id="dose-loading" style="padding:40px; text-align:center; color:#94a3b8; display:none;">Carregando...</div>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  function openDoseModal() { document.getElementById('dose-modal').showModal(); loadRegrasDose(); }
+
+  function loadRegrasDose() {
+    const tbody = document.querySelector('#table-dose tbody');
+    const loader = document.getElementById('dose-loading');
+    tbody.innerHTML = ''; loader.style.display = 'block';
+
+    google.script.run.withSuccessHandler(res => {
+      loader.style.display = 'none';
+      if(!res.sucesso) { tbody.innerHTML = `<tr><td colspan="5" style="color:red; padding:20px;">${res.erro}</td></tr>`; return; }
+      
+      // Atualiza contador no dashboard se existir
+      const ctr = document.getElementById('dose-counter');
+      if(ctr) ctr.innerText = res.dados.length + " Regras";
+
+      if(res.dados.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#94a3b8;">Vazio. Adicione regras!</td></tr>'; return; }
+
+      res.dados.forEach(r => {
+        const tr = document.createElement('tr');
+        const fmtAge = (d) => (d>=365 && d%365<30) ? (d/365).toFixed(0)+" anos" : (d>=30 ? (d/30).toFixed(0)+" meses" : d+" dias");
+        const tagClass = r.unidade.includes('kg') ? 'kg' : 'abs';
+
+        tr.innerHTML = `
+          <td style="font-weight:600;">${r.med}</td>
+          <td>${fmtAge(r.diasMin)} a ${fmtAge(r.diasMax)}</td>
+          <td><span class="tag-unit ${tagClass}">${r.unidade}</span></td>
+          <td>
+             <span style="color:#f59e0b">${r.doseMin || '-'}</span> / 
+             <span style="color:#10b981; font-weight:bold;">${r.doseUsual || '-'}</span> / 
+             <span style="color:#ef4444; font-weight:bold;">${r.doseMax || '-'}</span>
+          </td>
+          <td style="text-align:right;"><button onclick="delRegraDose(${r.id}, this)" style="border:none; cursor:pointer; color:#ef4444;">✕</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }).apiGetRegrasDose();
+  }
+
+  function saveRegraDose() {
+    const med = document.getElementById('dose-med').value;
+    if(!med) return alert("Informe o nome do medicamento.");
+
+    // Converte idade para dias
+    const dMin = Math.floor((parseFloat(document.getElementById('dose-age-min').value)||0) * parseFloat(document.getElementById('dose-unit-min').value));
+    const dMax = Math.floor((parseFloat(document.getElementById('dose-age-max').value)||0) * parseFloat(document.getElementById('dose-unit-max').value));
+
+    const regra = {
+      med: med,
+      unidade: document.getElementById('dose-unidade').value,
+      diasMin: dMin, diasMax: dMax,
+      doseMin: parseFloat(document.getElementById('val-dose-min').value) || "",
+      doseUsual: parseFloat(document.getElementById('val-dose-usual').value) || "",
+      doseMax: parseFloat(document.getElementById('val-dose-max').value) || ""
+    };
+
+    const btn = document.querySelector('.btn-add-dose');
+    const t = btn.innerText; btn.innerText = "Salvando..."; btn.disabled = true;
+
+    google.script.run.withSuccessHandler(res => {
+      btn.innerText = t; btn.disabled = false;
+      if(res.sucesso) {
+        // Limpa valores numéricos
+        ['val-dose-min','val-dose-usual','val-dose-max'].forEach(id=>document.getElementById(id).value='');
+        loadRegrasDose();
+      } else alert(res.erro);
+    }).apiSalvarRegraDose(regra);
+  }
+
+  function delRegraDose(id, btn) {
+    if(!confirm("Excluir?")) return;
+    btn.innerText = "...";
+    google.script.run.withSuccessHandler(res => {
+      if(res.sucesso) btn.closest('tr').remove(); else alert(res.erro);
+    }).apiExcluirRegraDose(id);
+  }
+</script>
