@@ -8,7 +8,7 @@
  * ============================================================================
  */
 
-const GEMINI_API_KEY = "OMITIDO POR SEGURANÇA"; 
+const GEMINI_API_KEY = "AIzaSyDI_74u6OX5--6ZjOUlbJuqQUf5f46pP-8"; 
 const MASTER_DB_ID = "1zKqYVR9seTPy3eyX5CR2xuXZtqSwwvERQn_KX3GK5JM"; // Base HCPA
 // Lista de segurança caso a API de descoberta falhe
 const FALLBACK_MODELS = ["gemini-2.5-flash","gemini-2.0-flash-lite", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
