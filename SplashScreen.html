@@ -1,1 +1,236 @@
+<style>
+  #splash-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(to bottom, #020617 0%, #0f172a 100%);
+    z-index: 9999;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    overflow: hidden;
+    transition: opacity 0.5s ease-out;
+  }
 
+  /* --- ESTRELAS (WARP EFFECT) --- */
+  .star-container {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0; perspective: 500px; transform-style: preserve-3d;
+  }
+  
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.8;
+    transition: all 0.5s ease-in;
+  }
+
+  /* --- FOGUETE (INTACTO) --- */
+  .rocket-container {
+    position: absolute;
+    bottom: 30vh;
+    width: 160px; height: 160px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 10;
+    transition: transform 1s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  .rocket-svg {
+    width: 100%; height: auto;
+    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.6));
+    z-index: 2;
+    animation: floatRocket 3s ease-in-out infinite;
+  }
+
+  @keyframes floatRocket {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+  }
+
+  /* --- FOGO DO MOTOR --- */
+  .fire-wrapper {
+    position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%);
+    width: 60px; height: 60px;
+    display: flex; justify-content: center;
+    z-index: 1; transition: height 0.3s;
+  }
+  
+  .fire-core {
+    width: 100%; height: 100%;
+    background: radial-gradient(circle at 50% 0%, #fff 10%, #facc15 40%, #ef4444 80%, transparent 100%);
+    filter: blur(4px); border-radius: 50% 50% 20% 20%;
+    animation: flicker 0.1s infinite alternate;
+    opacity: 0.8;
+  }
+
+  @keyframes flicker { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(1.05); opacity: 1; } }
+
+  /* --- TEXTO E BOTÕES (ATUALIZADO) --- */
+  .loading-text {
+    margin-bottom: 14vh; /* Ajuste leve para caber os botões */
+    color: #64748b; font-family: 'Inter', sans-serif; font-size: 0.8rem; letter-spacing: 3px;
+    text-transform: uppercase; font-weight: 700;
+    transition: opacity 0.3s;
+  }
+
+  /* Container para os dois botões */
+  .buttons-container {
+    position: absolute; bottom: 8vh;
+    display: flex; gap: 20px;
+    opacity: 0; transform: translateY(20px); /* Começa invisível */
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 20;
+  }
+  
+  .buttons-container.visible {
+    opacity: 1; transform: translateY(0);
+  }
+
+  .start-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 12px 30px;
+    font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 600; letter-spacing: 1px;
+    border-radius: 30px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.2);
+    transition: all 0.3s;
+    min-width: 160px;
+  }
+  
+  .start-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 30px rgba(37, 99, 235, 0.4);
+    transform: scale(1.05);
+  }
+
+  /* Estilo especial para o botão IA */
+  .start-btn.ai-mode {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.6) 0%, rgba(99, 102, 241, 0.6) 100%);
+    border-color: #818cf8;
+    box-shadow: 0 0 25px rgba(99, 102, 241, 0.3);
+  }
+  .start-btn.ai-mode:hover {
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.5);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.8) 0%, rgba(99, 102, 241, 0.8) 100%);
+  }
+
+  /* --- ESTADO DE DOBRA (WARP SPEED) --- */
+  
+  body.warp-mode .star {
+    width: 2px !important; height: 60vh !important; border-radius: 0 !important;
+    background: linear-gradient(to bottom, transparent, #fff, transparent) !important;
+    opacity: 0.6; animation: warpFall 0.15s linear infinite !important;
+  }
+  
+  body.warp-mode .rocket-svg { animation: shakeHigh 0.1s infinite; }
+  body.warp-mode .rocket-container { transition: bottom 1.5s cubic-bezier(0.5, 0, 1, 0.5); bottom: 120vh; }
+  body.warp-mode .fire-wrapper { height: 300px; width: 80px; }
+  body.warp-mode .fire-core { background: radial-gradient(circle at 50% 0%, #fff 20%, #60a5fa 50%, #2563eb 90%, transparent 100%); }
+
+  /* Esconde UI ao voar */
+  body.warp-mode .buttons-container, 
+  body.warp-mode .loading-text {
+    opacity: 0; pointer-events: none;
+  }
+
+  @keyframes warpFall { 0% { transform: translateY(-100vh); } 100% { transform: translateY(100vh); } }
+  @keyframes shakeHigh { 
+    0% { transform: translate(0, 0); } 25% { transform: translate(-3px, 3px); } 
+    50% { transform: translate(3px, -3px); } 75% { transform: translate(-3px, -3px); } 
+    100% { transform: translate(3px, 3px); } 
+  }
+
+</style>
+
+<div id="splash-screen">
+  <div class="star-container" id="star-container"></div>
+
+  <div class="rocket-container">
+    <svg class="rocket-svg" viewBox="0 0 200 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M40 200 C20 240 10 260 20 270 H60 L70 220 L40 200Z" fill="#EF4444" stroke="#B91C1C" stroke-width="2"/>
+      <path d="M160 200 C180 240 190 260 180 270 H140 L130 220 L160 200Z" fill="#EF4444" stroke="#B91C1C" stroke-width="2"/>
+      <path d="M100 20 C60 80 50 180 50 250 H150 C150 180 140 80 100 20Z" fill="#F1F5F9" stroke="#94A3B8" stroke-width="2"/>
+      <path d="M100 20 C85 40 75 60 70 80 H130 C125 60 115 40 100 20Z" fill="#EF4444" stroke="#B91C1C" stroke-width="2"/>
+      <circle cx="100" cy="130" r="25" fill="#3B82F6" stroke="#1E3A8A" stroke-width="4"/>
+      <circle cx="100" cy="130" r="18" fill="#BFDBFE" fill-opacity="0.5"/>
+      <circle cx="106" cy="124" r="6" fill="white"/>
+      <path d="M70 250 H130 L120 270 H80 L70 250Z" fill="#475569"/>
+    </svg>
+    
+    <div class="fire-wrapper">
+      <div class="fire-core"></div>
+    </div>
+  </div>
+  
+  <div class="loading-text" id="status-text">A PREPARAR MOTORES...</div>
+  
+  <div class="buttons-container" id="btn-group">
+    <button class="start-btn" onclick="triggerWarp('continue')">CONTINUAR</button>
+    <button class="start-btn ai-mode" onclick="triggerWarp('new')">✨ NOVO COM IA</button>
+  </div>
+</div>
+
+<script>
+  // 1. Gerar Estrelas (Código original)
+  (function createStars() {
+    const container = document.getElementById('star-container');
+    if(!container) return;
+    for (let i = 0; i < 150; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 100 + '%';
+      const size = Math.random() * 3 + 1;
+      star.style.width = size + 'px';
+      star.style.height = size + 'px';
+      const duration = Math.random() * 5 + 2;
+      star.style.animation = `twinkle ${duration}s infinite ease-in-out`;
+      container.appendChild(star);
+    }
+  })();
+
+  let dashboardReadyCallback = null;
+  let isReadyToLaunch = false;
+
+  // 2. Start Splash (Chamado pelo Dashboard)
+  function startSplashSequence(onComplete) {
+    dashboardReadyCallback = onComplete;
+    
+    // Espera 2.5s e mostra os botões
+    setTimeout(() => {
+      const btns = document.getElementById('btn-group');
+      const txt = document.getElementById('status-text');
+      if(btns && txt) {
+        txt.style.opacity = 0;
+        btns.classList.add('visible'); // Mostra o container
+        isReadyToLaunch = true;
+      }
+    }, 2500);
+  }
+
+  // 3. Trigger Warp (Recebe o modo: 'new' ou 'continue')
+  function triggerWarp(mode) {
+    if (!isReadyToLaunch) return;
+
+    document.body.classList.add('warp-mode'); // ATIVA DOBRA
+    
+    setTimeout(() => {
+      const splash = document.getElementById('splash-screen');
+      if(splash) splash.style.opacity = 0;
+      
+      setTimeout(() => {
+        if(splash) splash.remove();
+        // Passa o modo para o callback do Dashboard
+        if(dashboardReadyCallback) dashboardReadyCallback(mode);
+      }, 500);
+    }, 1500);
+  }
+</script>
+
+<style>
+  @keyframes twinkle {
+    0% { opacity: 0.3; transform: translateY(0px); }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; transform: translateY(20px); }
+  }
+</style>
