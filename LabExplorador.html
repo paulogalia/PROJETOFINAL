@@ -793,6 +793,18 @@ function openDrillDown(filterVal, xCol, yCol, isGrouped) {
          "Parâmetro": key,
          "Valor": currentAuditInfo[key]
       }));
+      // --- INSERÇÃO: TUTORIAL DE PROVA REAL ---
+      // Pega os totais da seleção atual
+      let tReg = currentDrillData.length;
+      let tPac = new Set(currentDrillData.map(r => r['_PID'] || r['PRONTUARIO'])).size;
+      let regra = currentAuditInfo["Fórmula (Lógica Excel)"];
+
+      // Gera o texto e converte para linhas do Excel
+      let textoTut = gerarTutorialValidacao(tReg, tPac, regra);
+      textoTut.split('\n').forEach(function(linha) {
+         auditRows.push({ "Parâmetro": linha, "Valor": "" }); 
+      });
+      // ----------------------------------------
       const wsAudit = XLSX.utils.json_to_sheet(auditRows);
       wsAudit['!cols'] = [{wch: 25}, {wch: 50}]; // Ajusta largura
       XLSX.utils.book_append_sheet(wb, wsAudit, "1. Resumo_Auditoria");
@@ -972,24 +984,39 @@ function openDrillDown(filterVal, xCol, yCol, isGrouped) {
   
   if(typeof initExploradorModule !== 'undefined') setTimeout(initExploradorModule, 500);
 
-  // --- TRADUTOR DE JAVASCRIPT PARA "HUMANÊS/EXCEL" ---
   function translateJsToHuman(jsCode) {
     if (!jsCode || jsCode === 'true' || jsCode.startsWith("Nenhuma")) return "Todos os dados (Sem filtros)";
     
     let human = jsCode;
+
+    // 1. Limpa sintaxe técnica
+    human = human.replace(/row\['(.*?)'\]/g, "$1");
     
-    // 1. Limpa a sintaxe técnica de coluna: row['COLUNA'] -> [COLUNA]
-    human = human.replace(/row\['(.*?)'\]/g, "[$1]");
+    // 2. INTERVALOS (Mantém lógica humana)
+    const rangeRegex = /([a-zA-Z0-9_]+)\s*>=\s*([0-9.]+)\s*&&\s*\1\s*<=\s*([0-9.]+)/;
+    const match = human.match(rangeRegex);
+    if (match) {
+        human = human.replace(rangeRegex, `${match[1]} _ENTRE_ ${match[2]} e ${match[3]}`);
+    }
+
+    // 3. NOMES DE COLUNAS (Ajuste fino para o seu Excel)
+    human = human.replace(/_IDADE_ANOS/g, "IDADE");
+    human = human.replace(/_SEXO/g, "SEXO");
+    human = human.replace(/_PID|PRONTUARIO/g, "ID_PACIENTE");
+    human = human.replace(/DT_REFERENCIA/g, "DATA_REF");
     
-    // 2. Traduz operadores lógicos matemáticos para português/Excel
+    // 4. MATEMÁTICA (A CORREÇÃO: Mantemos os símbolos!)
+    // Não substituímos / por "DIVIDIDO", deixamos quieto.
+    
+    // 5. OPERADORES (Usamos _underscores_ para facilitar o recorte depois)
     human = human.replace(/&&/g, " E ");
     human = human.replace(/\|\|/g, " OU ");
-    human = human.replace(/==/g, "=");
-    human = human.replace(/!=/g, "<>");
-    human = human.replace(/>=/g, "Maior ou Igual a ");
-    human = human.replace(/<=/g, "Menor ou Igual a ");
-    human = human.replace(/>/g, "Maior que ");
-    human = human.replace(/</g, "Menor que ");
+    human = human.replace(/==/g, " _IGUAL_ ");
+    human = human.replace(/!=/g, " _DIFERENTE_ ");
+    human = human.replace(/>=/g, " _MAIOR_IGUAL_ ");
+    human = human.replace(/<=/g, " _MENOR_IGUAL_ ");
+    human = human.replace(/>/g, " _MAIOR_ ");
+    human = human.replace(/</g, " _MENOR_ ");
     
     return human;
   }
@@ -1013,68 +1040,209 @@ function openDrillDown(filterVal, xCol, yCol, isGrouped) {
     return val; // Retorna o original se não souber o que fazer
   }
 
-  // --- EXPORTAÇÃO GLOBAL (O GRÁFICO INTEIRO) ---
-  function exportGlobalExcel() {
-    if (typeof XLSX === 'undefined') return alert("Erro: Biblioteca Excel não carregada.");
-    if (!globalChartData || globalChartData.length === 0) return alert("Ainda não há dados carregados no gráfico.");
+ // --- VERSÃO 3.0: BLOCO COMPLETO (BUSCA + GERAÇÃO) ---
 
-    try {
-      const wb = XLSX.utils.book_new();
+// 1. FUNÇÃO QUE BUSCA OS DADOS (O BOTÃO CHAMA ESTA)
+function exportGlobalExcel() {
+  if (typeof XLSX === 'undefined') return alert("Erro: Biblioteca Excel não carregada.");
+  if (!globalChartData || globalChartData.length === 0) return alert("Ainda não há dados carregados.");
 
-      // ---------------------------------------------------------
-      // ABA 1: AUDITORIA DO GRÁFICO
-      // ---------------------------------------------------------
-      let prompt = document.getElementById('filter-desc') ? document.getElementById('filter-desc').innerText : "Nenhum";
-      let formula = (activeFilterScript && activeFilterScript !== 'true') ? activeFilterScript : "Nenhuma (Todos os dados)";
-      let excelFriendly = (typeof translateJsToHuman === 'function') ? translateJsToHuman(formula) : formula;
-
-      const auditRows = [
-          { "Parâmetro": "--- CONTEXTO DO GRÁFICO ---", "Valor": "" },
-          { "Parâmetro": "Pergunta (Prompt)", "Valor": prompt },
-          { "Parâmetro": "População Total", "Valor": globalChartData.length + " Registos" },
-          { "Parâmetro": "", "Valor": "" },
-          { "Parâmetro": "--- LÓGICA DE FILTRO GLOBAL ---", "Valor": "" },
-          { "Parâmetro": "Fórmula (Legível)", "Valor": excelFriendly },
-          { "Parâmetro": "Código (Server)", "Valor": formula },
-          { "Parâmetro": "", "Valor": "" },
-          { "Parâmetro": "Data Geração", "Valor": new Date().toLocaleString() }
-      ];
-      
-      const wsAudit = XLSX.utils.json_to_sheet(auditRows);
-      wsAudit['!cols'] = [{wch: 25}, {wch: 60}];
-      XLSX.utils.book_append_sheet(wb, wsAudit, "1. Auditoria_Geral");
-
-      // ---------------------------------------------------------
-      // ABA 2: CONTAGEM AGRUPADA (RESUMO)
-      // ---------------------------------------------------------
-      // Tenta criar um resumo se houver um Eixo X definido
-      if (typeof currentXAxis !== 'undefined' && currentXAxis) {
-          const counts = {};
-          globalChartData.forEach(r => {
-              let val = r[currentXAxis] || "(Vazio)";
-              counts[val] = (counts[val] || 0) + 1;
-          });
-          
-          const summaryData = Object.keys(counts).map(k => ({ "Categoria (Eixo X)": k, "Contagem": counts[k] }));
-          const wsSummary = XLSX.utils.json_to_sheet(summaryData);
-          XLSX.utils.book_append_sheet(wb, wsSummary, "2. Resumo_Agrupado");
-      }
-
-      // ---------------------------------------------------------
-      // ABA 3: DADOS BRUTOS (TODOS)
-      // ---------------------------------------------------------
-      // Usa a função formatDataForExcel que já criamos para limpar datas e IDs
-      let cleanGlobal = globalChartData;
-      if (typeof formatDataForExcel === 'function') {
-          cleanGlobal = formatDataForExcel(globalChartData);
-      }
-      
-      const wsData = XLSX.utils.json_to_sheet(cleanGlobal);
-      XLSX.utils.book_append_sheet(wb, wsData, "3. Dados_Brutos_Completo");
-
-      // Salva
-      XLSX.writeFile(wb, "EUM_Grafico_Completo.xlsx");
-
-    } catch(e) { alert("Erro ao exportar: " + e.message); }
+  const sheet = document.getElementById('sel-source').value;
+  
+  // Descobre quais colunas baixar (baseado no que já tem no gráfico)
+  let colsToFetch = Object.keys(globalChartData[0]).filter(k => k !== 'rowNum' && k !== '_rawRows');
+  
+  // Feedback Visual no Botão
+  const btn = document.querySelector('button[onclick="exportGlobalExcel()"]');
+  const originalText = btn ? btn.innerText : "Excel Geral";
+  if(btn) { 
+      btn.innerHTML = '<span class="material-icons-round" style="font-size:16px; animation:spin 1s linear infinite;">sync</span> Baixando Universo...'; 
+      btn.disabled = true; 
   }
+
+  // Vai ao servidor buscar os dados SEM FILTRO (null)
+  google.script.run
+    .withSuccessHandler(res => {
+        if(btn) { btn.innerHTML = originalText; btn.disabled = false; }
+        
+        // Verifica erros e extrai a lista '.dados'
+        if (!res || !res.sucesso) {
+           return alert("Erro ao baixar dados: " + (res ? res.erro : "Resposta desconhecida"));
+        }
+
+        // Chama a Parte 2 passando a lista de dados
+        generateTrueAuditExcel(res.dados);
+    })
+    .withFailureHandler(err => {
+        if(btn) { btn.innerHTML = originalText; btn.disabled = false; }
+        alert("Erro fatal de conexão: " + err.message);
+    })
+    .apiGetRawExplorerData(sheet, colsToFetch, null, activeVirtualFields); 
+}
+
+// --- VERSÃO 6.0: GERAÇÃO COM COLUNA CALCULADA AUTOMÁTICA ---
+  function generateTrueAuditExcel(fullData) {
+      try {
+        const wb = XLSX.utils.book_new();
+
+        // 1. PREPARAÇÃO INTELIGENTE (Detecta se precisa criar coluna extra)
+        let prompt = document.getElementById('filter-desc') ? document.getElementById('filter-desc').innerText : "Nenhum";
+        let formula = (activeFilterScript && activeFilterScript !== 'true') ? activeFilterScript : "Nenhuma (Todos os dados)";
+        let excelFriendly = (typeof translateJsToHuman === 'function') ? translateJsToHuman(formula) : formula;
+
+        // Detecta matemática na regra (ex: DOSE / PESO)
+        let colunaExtraNome = null;
+        let expressaoMath = null;
+        
+        // Verifica se o tradutor encontrou operadores matemáticos
+        // (Baseado na nossa lógica v5.0 que mantém os símbolos)
+        var partes = excelFriendly.split(/ _.*?_ /); // Separa antes do operador (MAIOR, MENOR, etc)
+        var ladoEsquerdo = partes[0] ? partes[0].trim() : "";
+        
+        if (ladoEsquerdo.match(/[\/*+-]/)) { // Se tem matemática (+ - * /)
+             colunaExtraNome = "AUDITORIA_CALC";
+             expressaoMath = ladoEsquerdo; // Ex: DOSE_24HS / PESO
+        }
+
+        // 2. PROCESSAMENTO DOS DADOS BRUTOS (Injeta a coluna calculada)
+        let cleanGlobal = fullData.map(r => {
+             // Formata o dado base
+             let row = (typeof formatDataForExcel === 'function') ? formatDataForExcel([r])[0] : r;
+             
+             // SE PRECISAR, CALCULA O VALOR EXTRA LINHA POR LINHA
+             if (colunaExtraNome && expressaoMath) {
+                 try {
+                     // Truque: Cria uma mini-função JS para calcular o valor usando os dados da linha
+                     // Substitui nomes das colunas pelos valores: DOSE_24HS -> 500
+                     let conta = expressaoMath;
+                     
+                     // Varre as chaves da linha para substituir na fórmula
+                     // (Ordenamos por tamanho para evitar substituir 'PESO' dentro de 'PESO_TOTAL')
+                     Object.keys(row).sort((a,b) => b.length - a.length).forEach(key => {
+                         let val = row[key];
+                         // Se for numérico, usa direto. Se for nulo, usa 0.
+                         val = (typeof val === 'number') ? val : 0;
+                         // Regex para substituir apenas a palavra inteira
+                         let regexKey = new RegExp("\\b" + key + "\\b", "g");
+                         conta = conta.replace(regexKey, val);
+                     });
+                     
+                     // Executa a conta (eval seguro pois só tem números e operadores)
+                     // Cuidado: eval é perigoso em geral, mas aqui controlamos o input
+                     // Se preferir não usar eval, teríamos que fazer um parser simples.
+                     // Como é auditoria local, eval resolve rápido:
+                     let resultado = eval(conta); 
+                     
+                     // Arredonda e salva
+                     row[colunaExtraNome] = isFinite(resultado) ? Number(resultado.toFixed(2)) : 0;
+                     
+                 } catch(e) {
+                     row[colunaExtraNome] = "#ERRO";
+                 }
+             }
+             return row;
+        });
+
+        // 3. ATUALIZA O TUTORIAL PARA USAR A COLUNA NOVA
+        if (colunaExtraNome) {
+             // Reescreve a lógica humana para apontar para a nova coluna
+             // Ex: De "DOSE/PESO > 50" para "AUDITORIA_CALC > 50"
+             excelFriendly = colunaExtraNome + excelFriendly.substring(ladoEsquerdo.length);
+        }
+
+        // --- ABA 1: AUDITORIA ---
+        let filteredCount = globalChartData.length;
+        let filteredPac = new Set(globalChartData.map(r => r['_PID'] || r['PRONTUARIO'])).size;
+
+        const auditRows = [
+            { "Parâmetro": "--- CONTEXTO ---", "Valor": "" },
+            { "Parâmetro": "Pergunta", "Valor": prompt },
+            { "Parâmetro": "População Filtrada", "Valor": filteredCount },
+            { "Parâmetro": "População Total", "Valor": fullData.length },
+            { "Parâmetro": "", "Valor": "" },
+            { "Parâmetro": "--- LÓGICA ---", "Valor": "" },
+            { "Parâmetro": "Fórmula Auditoria", "Valor": excelFriendly },
+            { "Parâmetro": "", "Valor": "" },
+            { "Parâmetro": "Data Geração", "Valor": new Date().toLocaleString() }
+        ];
+
+        if(typeof gerarTutorialValidacao === 'function') {
+            // Passa flag 'true' se criamos coluna extra (você terá que ajustar a função gerarTutorialValidacao para aceitar isso, ou ela usa o texto novo)
+            let gTexto = gerarTutorialValidacao(filteredCount, filteredPac, excelFriendly);
+            gTexto.split('\n').forEach(l => auditRows.push({ "Parâmetro": l, "Valor": "" }));
+        }
+
+        const wsAudit = XLSX.utils.json_to_sheet(auditRows);
+        wsAudit['!cols'] = [{wch: 25}, {wch: 60}];
+        XLSX.utils.book_append_sheet(wb, wsAudit, "1. Auditoria_Geral");
+
+        // --- ABA 2: RESUMO ---
+        if (typeof currentXAxis !== 'undefined' && currentXAxis) {
+            const counts = {};
+            globalChartData.forEach(r => { 
+                let val = r[currentXAxis] || "(Vazio)";
+                counts[val] = (counts[val] || 0) + 1;
+            });
+            const wsSummary = XLSX.utils.json_to_sheet(Object.keys(counts).map(k => ({ "Categoria": k, "Contagem": counts[k] })));
+            XLSX.utils.book_append_sheet(wb, wsSummary, "2. Resumo_Agrupado");
+        }
+
+        // --- ABA 3: DADOS BRUTOS (Agora com a coluna extra!) ---
+        const wsData = XLSX.utils.json_to_sheet(cleanGlobal);
+        XLSX.utils.book_append_sheet(wb, wsData, "3. Dados_Brutos_Completo");
+
+        XLSX.writeFile(wb, "EUM_Auditoria_Completa.xlsx");
+
+      } catch(e) { alert("Erro ao gerar Excel: " + e.message); }
+  }
+
+function gerarTutorialValidacao(totalRegistros, totalPacientes, regrasLogicas) {
+  var texto = "\n\n"; 
+  texto += "--- GUIA DE VALIDAÇÃO (PROVA REAL NO EXCEL) ---\n";
+  texto += "Para validar os " + totalRegistros + " registros encontrados:\n\n";
+
+  if (regrasLogicas && regrasLogicas.length > 0 && regrasLogicas !== "Todos os dados (Sem filtros)") {
+    texto += "PASSO 1: REPLICAR O FILTRO DA IA\n";
+    texto += "   1. Abra a aba '3. Dados_Brutos_Completo'.\n";
+    texto += "   2. Ative os filtros (Dados > Filtro).\n";
+    
+    // Tenta separar a "Esquerda" (Fórmula) da "Direita" (Valor) usando os separadores da v5.0
+    // Procura qualquer operador cercado por _ (ex: _MAIOR_)
+    var partes = regrasLogicas.split(/ _.*?_ /); 
+    var ladoEsquerdo = partes[0] ? partes[0].trim() : "";
+    var condicaoTexto = regrasLogicas; // Texto completo para leitura
+
+    // A) CENÁRIO MATEMÁTICO (Tem barra ou asterisco na esquerda?)
+    if (ladoEsquerdo.includes("/") || ladoEsquerdo.includes("*") || ladoEsquerdo.includes("+") || ladoEsquerdo.includes("-")) {
+        texto += "   3. CÁLCULO NECESSÁRIO (Coluna Calculada):\n";
+        texto += "      Esta regra não existe na tabela original. Você precisa criá-la.\n";
+        texto += "      -> Crie uma nova coluna (Ex: Coluna Z) com o título 'AUDITORIA'.\n";
+        texto += "      -> Na primeira célula de dados (Z2), cole esta fórmula:\n";
+        texto += "         =" + ladoEsquerdo + "\n";
+        texto += "      -> (Dica: O Excel pode pedir para você clicar nas células das colunas " + ladoEsquerdo + " em vez de digitar os nomes).\n";
+        texto += "      -> Arraste a fórmula para baixo e filtre a coluna 'AUDITORIA' conforme a regra: " + regrasLogicas + "\n";
+    } 
+    // B) CENÁRIO INTERVALO
+    else if (regrasLogicas.includes("_ENTRE_")) {
+        texto += "   3. Filtro de INTERVALO:\n";
+        texto += "      -> Coluna: " + ladoEsquerdo + "\n";
+        texto += "      -> Lógica: " + regrasLogicas.replace(/_ENTRE_/g, "entre") + "\n";
+        texto += "      -> Use: Filtros de Número > 'Está entre...'\n";
+    }
+    // C) CENÁRIO PADRÃO
+    else {
+        texto += "   3. Filtro PADRÃO:\n";
+        texto += "      -> Lógica: " + regrasLogicas.replace(/_/g, " ") + "\n"; // Remove underscores para leitura
+        texto += "      -> Use: Filtros de Número/Texto e escolha a condição.\n";
+    }
+    
+    texto += "   4. Resultado esperado: " + totalRegistros + " registros visíveis.\n\n";
+  }
+
+  texto += "PASSO " + (regrasLogicas ? "2" : "1") + ": CONFIRMAR HEADCOUNT (" + totalPacientes + " Pacientes)\n";
+  texto += "   1. Copie a coluna 'ID_PACIENTE', cole em nova aba e remova duplicatas.\n";
+  texto += "   2. Deve restar " + totalPacientes + " únicos.\n";
+  texto += "-------------------------------------------------\n";
+  return texto;
+}
 </script>
