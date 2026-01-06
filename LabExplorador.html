@@ -1,5 +1,4 @@
 <style>
- 
   /* --- LAYOUT BASE --- */
   .exp-container { display: grid; grid-template-columns: 280px 1fr; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; }
   .exp-options { background: #fff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow-y: auto; z-index: 20; }
@@ -106,7 +105,7 @@
 
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* --- PAINEL DE AUDITORIA (NOVO) --- */
+  /* --- PAINEL DE AUDITORIA (NOVO) --- */
   .audit-box {
     background: #f8fafc;
     border-bottom: 1px solid #e2e8f0;
@@ -148,19 +147,16 @@
       <div class="form-group"><label class="form-label">Fonte de Dados</label><select id="sel-source" class="form-select" onchange="loadCols()"><option>Carregando...</option></select></div>
       <div class="form-group"><label class="form-label">Eixo X (Agrupador)</label><select id="sel-x" class="form-select" disabled></select></div>
       <div class="form-group"><label class="form-label">Eixo Y (Métrica)</label><select id="sel-y" class="form-select" disabled><option value="">(Contagem)</option></select></div>
-      <div class="form-group"><label class="form-label">Tipo</label><select id="sel-type" class="form-select"><option value="bar">Barras</option><option value="pie">Pizza</option><option value="scatter">Dispersão</option></select></div>
+      <div class="form-group"><label class="form-label">Tipo</label><select id="sel-type" class="form-select"><option value="bar">Barras</option><option value="pie">Pizza</option><option value="scatter">Dispersão</option><option value="line">Linha (Temporal)</option></select></div>
       <div class="chk-wrapper" title="Se marcado, calcula a média dos registos de cada paciente antes de agregar."><input type="checkbox" id="chk-agrupar-paciente"><span>Agrupar por Paciente</span></div>
       
 <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
-  
   <button class="btn-run" onclick="runAnalysis()" style="width:100%; padding:12px; background:#2563eb; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:8px; font-size:1rem; box-shadow:0 2px 4px rgba(37, 99, 235, 0.2);">
     <span class="material-icons-round">play_arrow</span> ATUALIZAR GRÁFICO
   </button>
-
   <button class="btn-stack" onclick="sendChartToReport()" style="width:100%; padding:8px; background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; border-radius:6px; cursor:pointer; font-weight:600; display:flex; justify-content:center; align-items:center; gap:6px;">
     📌 Adicionar Visualização ao Relatório
   </button>
-
 </div>
 
     <div id="tab-estilo" class="tab-content">
@@ -178,27 +174,19 @@
   </aside>
 
 <main class="exp-canvas">
-  
   <div class="chart-toolbar" style="display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:#fff; border:1px solid #cbd5e1; border-radius:10px; margin-bottom:20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-
       <div style="display:flex; align-items:center; gap:6px;">
         <span class="material-icons-round" style="font-size:18px; color:#cbd5e1;">info</span>
         <span id="chart-status" style="color:#64748b; font-size:0.85rem; font-weight:600;">Pronto</span>
       </div>
-
       <div style="display:flex; gap:10px; align-items:center;">
-        
         <button onclick="exportGlobalExcel()" style="background:#fff; border:1px solid #cbd5e1; color:#334155; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px; font-size:0.8rem; box-shadow:0 1px 2px rgba(0,0,0,0.05); white-space:nowrap;">
-          <span class="material-icons-round" style="font-size:16px; color:#10b981;">table_view</span> 
-          Excel Geral
+          <span class="material-icons-round" style="font-size:16px; color:#10b981;">table_view</span> Excel Geral
         </button>
-
         <button class="btn-magic" onclick="runDashboardAuto()" style="margin:0; background: linear-gradient(135deg, #8b5cf6, #d946ef); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size:0.8rem; box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3); white-space:nowrap;">
            <span class="material-icons-round" style="font-size:16px;">dashboard</span> AUTO
         </button>
-
       </div>
-
   </div>
     <div class="view-container">
         <div id="view-single" class="chart-box">
@@ -206,22 +194,10 @@
         </div>
 
         <div id="view-grid" class="dashboard-grid">
-            <div class="dash-card">
-              <div class="dash-title">DEMOGRAFIA (PACIENTES)</div>
-              <div id="chart-1" style="flex:1;"></div>
-            </div>
-            <div class="dash-card">
-              <div class="dash-title">TOP MEDICAMENTOS</div>
-              <div id="chart-2" style="flex:1;"></div>
-            </div>
-            <div class="dash-card">
-              <div class="dash-title">EVOLUÇÃO TEMPORAL</div>
-              <div id="chart-3" style="flex:1;"></div>
-            </div>
-            <div class="dash-card">
-              <div class="dash-title">DISTRIBUIÇÃO IDADE (PACIENTES)</div>
-              <div id="chart-4" style="flex:1;"></div>
-            </div>
+            <div class="dash-card"><div class="dash-title">DEMOGRAFIA (PACIENTES)</div><div id="chart-1" style="flex:1;"></div></div>
+            <div class="dash-card"><div class="dash-title">TOP MEDICAMENTOS</div><div id="chart-2" style="flex:1;"></div></div>
+            <div class="dash-card"><div class="dash-title">EVOLUÇÃO TEMPORAL</div><div id="chart-3" style="flex:1;"></div></div>
+            <div class="dash-card"><div class="dash-title">DISTRIBUIÇÃO IDADE (PACIENTES)</div><div id="chart-4" style="flex:1;"></div></div>
         </div>
     </div>
     
@@ -235,7 +211,7 @@
     <div class="oracle-fab" onclick="toggleOracle()"><span class="material-icons-round">chat_bubble</span></div>
     <div class="oracle-window" id="oracle-window">
       <div class="oracle-header"><span>Oráculo</span><span class="material-icons-round" style="cursor:pointer;" onclick="toggleOracle()">close</span></div>
-      <div class="oracle-body" id="chat-body"><div class="chat-bot chat-bubble">Olá! Posso ajudar a filtrar os dados.</div></div>
+      <div class="oracle-body" id="chat-body"><div class="chat-bot chat-bubble">Olá! Posso ajudar a filtrar os dados. Tente "Evolução temporal..." ou "Quantos pacientes...".</div></div>
       <div class="oracle-input-area">
         <input type="text" id="chat-input" class="oracle-input" placeholder="Escreva aqui...">
         <button id="btn-send-chat" class="oracle-send"><span class="material-icons-round" style="font-size:18px;">send</span></button>
@@ -247,18 +223,10 @@
 <div class="drill-overlay" id="drill-overlay"></div>
 <dialog id="drill-modal" class="drill-modal">
   <div class="drill-header">
-    <div>
-      <h3 class="drill-title">Detalhes do Grupo</h3>
-      <div id="drill-subtitle" class="drill-subtitle"></div>
-    </div>
+    <div><h3 class="drill-title">Detalhes do Grupo</h3><div id="drill-subtitle" class="drill-subtitle"></div></div>
     <button onclick="closeDrillDown()" style="border:none; background:none; font-size:1.5rem; cursor:pointer; color:#94a3b8;">&times;</button>
   </div>
-  <div class="drill-body">
-    <table class="data-table">
-      <thead id="drill-thead"></thead>
-      <tbody id="drill-table-body"></tbody>
-    </table>
-  </div>
+  <div class="drill-body"><table class="data-table"><thead id="drill-thead"></thead><tbody id="drill-table-body"></tbody></table></div>
   <div style="padding:15px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between;">
     <div style="display:flex; gap:10px;">
       <button onclick="exportDrillExcel()" style="padding:8px 16px; border-radius:6px; border:1px solid #10b981; background:#ecfdf5; color:#047857; cursor:pointer; font-weight:600;">📥 Excel</button>
@@ -319,7 +287,7 @@
     return true;
   }
 
-  // --- MODO 1: GRÁFICO MANUAL ---
+  // --- MODO 1: GRÁFICO MANUAL (COM PROTEÇÃO) ---
   function runAnalysis() {
     document.getElementById('view-grid').style.display = 'none';
     document.getElementById('view-single').style.display = 'block';
@@ -389,7 +357,7 @@
         
         data.forEach(d => {
           let cat = d[xCol];
-          if(typeof cat === 'number' && type !== 'scatter') cat = Math.floor(cat); 
+          if(typeof cat === 'number' && type !== 'scatter' && type !== 'line') cat = Math.floor(cat); 
           
           if (!categories[cat]) categories[cat] = { sum: 0, count: 0 };
           const val = yCol ? (parseFloat(d[yCol])||0) : 1;
@@ -400,18 +368,25 @@
         finalX = Object.keys(categories).sort();
         finalY = finalX.map(c => yCol ? (categories[c].sum / categories[c].count) : categories[c].count);
 
-        // Atualiza KPIs para a seleção manual
-        document.getElementById('kpi-n').innerText = res.dados.length;
-        document.getElementById('kpi-p').innerText = new Set(res.dados.map(d=>d['_PID'])).size;
-        document.getElementById('kpi-male').innerText = '-';
-        document.getElementById('kpi-female').innerText = '-';
+        updateSmartKPIs(res.dados);
+
+        // ★ FIX: PROTEÇÃO CONTRA TELA VERMELHA (NaN)
+        if (finalX.length === 0) {
+            Plotly.newPlot('main-chart', [], { title: "Sem dados após o filtro.", xaxis: { visible: false }, yaxis: { visible: false } });
+            return alert("A combinação de filtro e eixos selecionada não retornou dados válidos.");
+        }
+        if (finalY.some(isNaN)) {
+             Plotly.newPlot('main-chart', [], { title: "Erro de Cálculo (NaN).", xaxis: { visible: false }, yaxis: { visible: false } });
+             return alert("Erro: O cálculo resultou em valores inválidos (NaN). Verifique se a coluna Y contém apenas números.");
+        }
 
         const trace = {
           x: finalX, y: finalY,
-          type: type==='scatter'?'scatter':(type==='pie'?'pie':'bar'),
-          mode: type==='scatter' ? 'markers' : undefined,
+          type: type==='scatter'?'scatter':(type==='pie'?'pie':(type==='line'?'scatter':'bar')),
+          mode: (type==='scatter'||type==='line') ? (type==='line'?'lines+markers':'markers') : undefined,
           name: yCol ? 'Média' : 'Contagem',
           marker: {color: customColor || '#3b82f6', size: type==='scatter' ? 10 : undefined, opacity: 0.7},
+          line: type==='line' ? {width:3} : undefined,
           text: finalY.map(v => typeof v === 'number' ? v.toFixed(1) : v),
           textposition: 'auto'
         };
@@ -420,7 +395,11 @@
 
         const layout = { 
           title: customTitle || `${yCol||'Contagem'} por ${xCol}` + (isGrouped ? " (Por Paciente)" : ""),
-          xaxis: { title: customX || xCol, automargin: true },
+          xaxis: { 
+              title: customX || xCol, 
+              automargin: true,
+              type: type==='line'?'date':'-' // FIX: Data segura
+          },
           yaxis: { title: customY || (yCol ? `Média de ${yCol}` : 'Quantidade') },
           hovermode: 'closest',
           margin: {t:40, b:80, l:50, r:20},
@@ -456,7 +435,6 @@
        const smartPlan = config.smartCharts || []; // Pega o plano da IA (se houver)
        const mapping = config.core || {};
        
-       // Se não houver plano IA, criamos um default robusto
        const chartsToRender = (smartPlan.length === 4) ? smartPlan : [
           { title: "DEMOGRAFIA (SEXO)", type: "pie", x: "colSexo" },
           { title: "TOP MEDICAMENTOS", type: "bar", x: "colMed" },
@@ -464,25 +442,17 @@
           { title: "DISTRIBUIÇÃO ETÁRIA", type: "histogram", x: "_IDADE_ANOS" }
        ];
 
-       // Resolve os nomes reais das colunas
-       // (A IA devolve chaves abstratas 'colCreat', nós traduzimos para 'CREATININA_VALOR')
        const realCols = [];
        chartsToRender.forEach(c => {
-          // Tenta mapear chave -> coluna real. Se não for chave, usa o nome direto.
           c.realX = mapping[c.x] || c.x; 
           c.realY = mapping[c.y] || c.y;
-          
-          // Casos especiais virtuais
           if (c.x === '_IDADE_ANOS' || c.x === '_SEXO' || c.x === '_PID') c.realX = c.x;
-          
           if (c.realX) realCols.push(c.realX);
           if (c.realY) realCols.push(c.realY);
        });
 
-       // Adiciona colunas obrigatórias
        realCols.push('_PID', '_SEXO', '_IDADE_ANOS', 'DT_REFERENCIA'); 
        
-       // 2. Busca os Dados
        const sheet = document.getElementById('sel-source').value;
        
        google.script.run.withSuccessHandler(res => {
@@ -491,14 +461,12 @@
           if(!res.sucesso) return alert(res.erro);
           globalChartData = res.dados; 
           
-          // Atualiza KPIs
           updateSmartKPIs(res.dados);
 
-          // 3. Renderiza os 4 Gráficos do Plano
           chartsToRender.forEach((plan, idx) => {
              const divId = `chart-${idx+1}`;
              const titleDiv = document.querySelector(`#${divId}`).parentNode.querySelector('.dash-title');
-             if(titleDiv) titleDiv.innerText = plan.title; // Atualiza título sugerido pela IA
+             if(titleDiv) titleDiv.innerText = plan.title; 
              
              renderSmartChart(divId, res.dados, plan);
           });
@@ -508,45 +476,38 @@
     }).apiGetInitialState();
   }
 
-  // --- RENDERIZADOR INTELIGENTE (Adapta-se ao pedido da IA) ---
   function renderSmartChart(divId, data, plan) {
      const type = plan.type;
      const xCol = plan.realX;
      const yCol = plan.realY;
 
-     // 1. Preparação dos Dados
      let xVal = [], yVal = [];
      
      if (type === 'scatter' || type === 'line') {
-        // Dados brutos (sem agregação)
         xVal = data.map(d => d[xCol]);
         yVal = yCol ? data.map(d => d[yCol]) : data.map(d => 1);
         
-        // Se for linha temporal, precisamos ordenar e contar
         if (type === 'line' && (xCol.includes('DT') || xCol.includes('DATA'))) {
            const timeData = getDateTrend(data, xCol);
            xVal = timeData.dates;
            yVal = timeData.counts;
         }
      } else if (type === 'histogram' || type === 'box') {
-        xVal = data.map(d => d[xCol]); // Array direto
+        xVal = data.map(d => d[xCol]); 
      } else {
-        // Agregação padrão (Bar/Pie)
         const groups = {};
         data.forEach(r => {
            let k = r[xCol] || 'N/D';
            if(!groups[k]) groups[k]=0;
            groups[k]++;
         });
-        // Top 10 para não poluir
         const sorted = Object.entries(groups).sort((a,b)=>b[1]-a[1]).slice(0,10);
         xVal = sorted.map(i=>i[0]);
         yVal = sorted.map(i=>i[1]);
      }
 
-     // 2. Configuração do Traço Plotly
      let trace = {};
-     let layout = { margin: {t:20, b:30, l:40, r:10}, autosize: true, showlegend: false };
+     let layout = { margin: {t:20, b:30, l:40, r:10}, autosize: true, showlegend: false, xaxis: {type: type==='line'?'date':'-'} };
 
      if (type === 'pie') {
         trace = { labels: xVal, values: yVal, type: 'pie', marker: {colors: ['#3b82f6','#db2777','#10b981','#f59e0b']} };
@@ -565,11 +526,9 @@
 
      Plotly.newPlot(divId, [trace], layout, {responsive: true, displayModeBar: false});
      
-     // Drill-down Link
      document.getElementById(divId).on('plotly_click', d => {
         const pt = d.points[0];
         const label = (type === 'pie') ? pt.label : pt.x;
-        // Evita abrir drilldown em histogramas/linhas complexas por enquanto
         if (type !== 'histogram' && type !== 'line') openDrillDown(label, xCol);
      });
   }
@@ -577,63 +536,9 @@
   function updateSmartKPIs(data) {
      document.getElementById('kpi-n').innerText = data.length;
      document.getElementById('kpi-p').innerText = new Set(data.map(d=>d['_PID'])).size;
-     // Tenta calcular sexo se existir
-     const males = data.filter(d => d['_SEXO'] === 'M').length;
-     const females = data.filter(d => d['_SEXO'] === 'F').length;
-     document.getElementById('kpi-male').innerText = males || '-';
-     document.getElementById('kpi-female').innerText = females || '-';
-  }
-
-  // --- HELPERS DO DASHBOARD ---
-  function renderPlotly(divId, data, xCol, yCol, type, title) {
-    const groups = {};
-    data.forEach(r => {
-       let key = r[xCol] || 'N/D';
-       if (!groups[key]) groups[key] = 0;
-       groups[key]++;
-    });
-    const labels = Object.keys(groups);
-    const values = Object.values(groups);
-    let trace = { x: labels, y: values, type: type === 'pie' ? 'pie' : 'bar' };
-    if (type === 'pie') { trace = { labels: labels, values: values, type: 'pie', marker: {colors: ['#3b82f6','#db2777']} }; }
-    
-    const layout = { margin: {t:20, b:30, l:30, r:10}, autosize: true, showlegend: type==='pie' };
-    Plotly.newPlot(divId, [trace], layout, {responsive: true, displayModeBar: false});
-    
-    // Drill Down (Assume agrupado para charts de pacientes)
-    document.getElementById(divId).on('plotly_click', (d) => {
-       const pt = d.points[0];
-       const label = type === 'pie' ? pt.label : pt.x;
-       // Se o chart for de pacientes únicos (Sexo/Idade), ativa agrupamento no drill
-       const isPatientChart = (xCol === '_SEXO' || xCol === '_IDADE_ANOS');
-       openDrillDown(label, xCol, null, isPatientChart);
-    });
-  }
-
-  function renderSimpleBar(divId, x, y, orientation) {
-    const trace = {
-       x: orientation==='h' ? y : x, y: orientation==='h' ? x : y,
-       type: 'bar', orientation: orientation,
-       marker: { color: '#8b5cf6' }
-    };
-    Plotly.newPlot(divId, [trace], {margin:{t:10,l:100,r:20,b:30}}, {responsive:true, displayModeBar:false});
-  }
-
-  function renderLineChart(divId, x, y) {
-    const trace = { x: x, y: y, type: 'scatter', mode: 'lines+markers', line: {color:'#10b981', width:3} };
-    Plotly.newPlot(divId, [trace], {margin:{t:10,l:30,r:10,b:30}}, {responsive:true, displayModeBar:false});
-  }
-
-  function renderHistogram(divId, data, col) {
-    const trace = { x: data.map(d=>d[col]), type: 'histogram', marker: {color:'#f59e0b'} };
-    Plotly.newPlot(divId, [trace], {margin:{t:10,l:30,r:10,b:30}}, {responsive:true, displayModeBar:false});
-  }
-
-  function getTopN(data, col, n) {
-    const counts = {};
-    data.forEach(r => { if(r[col]) counts[r[col]] = (counts[r[col]]||0)+1; });
-    const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,n);
-    return { labels: sorted.map(i=>i[0]), values: sorted.map(i=>i[1]) };
+     // Identifica M/F com regex simples para pegar variações (M, Masc, F, Fem)
+     document.getElementById('kpi-male').innerText = data.filter(d => (d['_SEXO']||'').startsWith('M')).length || '-';
+     document.getElementById('kpi-female').innerText = data.filter(d => (d['_SEXO']||'').startsWith('F')).length || '-';
   }
 
   function getDateTrend(data, col) {
@@ -659,14 +564,12 @@ function openDrillDown(filterVal, xCol, yCol, isGrouped) {
     currentXCol = xCol;
     modal.style.display = 'flex'; modal.showModal(); overlay.style.display = 'block';
 
-    // 1. Filtra Dados
     let rowsToShow = globalChartData.filter(r => {
         let v = r[xCol];
         if(typeof v === 'number') v = Math.floor(v); 
         return String(v) == String(filterVal);
     });
 
-    // 2. Estatísticas & Deduplicação
     let rawCount = rowsToShow.length;
     let uniqueCount = rawCount;
     if (isGrouped) {
@@ -677,53 +580,38 @@ function openDrillDown(filterVal, xCol, yCol, isGrouped) {
     }
     currentDrillData = rowsToShow; 
 
-    // 3. Cálculos (CORRIGIDO PARA M/F)
     let ages = rowsToShow.map(r => r['_IDADE_ANOS']).filter(n => n > 0);
     let avgAge = ages.length ? (ages.reduce((a,b)=>a+b,0)/ages.length).toFixed(2) : '0';
-    let minAge = ages.length ? Math.min(...ages).toFixed(1) : '-';
-    let maxAge = ages.length ? Math.max(...ages).toFixed(1) : '-';
     
-    // Contagem de Sexo Robusta (Resolve o problema do M:0 F:0)
     let sexDist = { M: 0, F: 0, Outros: 0 };
     rowsToShow.forEach(r => {
-       // Tenta pegar de _SEXO (calculado), senão tenta da coluna original (SEXO ou GENERO)
        let s = r['_SEXO'] || r['SEXO'] || r['GENERO'] || '-';
        s = String(s).toUpperCase().trim();
-       
-       // Normaliza para contagem (Aceita "M", "MASC", "MASCULINO")
-       if (s === 'M' || s.startsWith('MASC')) sexDist.M++;
-       else if (s === 'F' || s.startsWith('FEM')) sexDist.F++;
+       if (s.startsWith('M')) sexDist.M++;
+       else if (s.startsWith('F')) sexDist.F++;
        else sexDist.Outros++;
     });
 
-    // 4. LÓGICA & TRADUÇÃO (AQUI ESTÁ A MUDANÇA)
     let iaPrompt = document.getElementById('filter-desc') ? document.getElementById('filter-desc').innerText : "Nenhum";
     let iaFormula = (activeFilterScript && activeFilterScript !== 'true') ? activeFilterScript : "Nenhuma (Todos os dados)";
-    
-    // Traduz para "Humanês/Excel"
     let excelFriendly = translateJsToHuman(iaFormula);
 
-    // 5. PREPARA O DOSSIÊ DETALHADO
     currentAuditInfo = {
        "--- CONTEXTO CLÍNICO ---": "",
        "Pergunta Original": iaPrompt,
        "População": `${uniqueCount} Pacientes (de ${rawCount} registos brutos)`,
-       
        "--- LÓGICA DE FILTRAGEM ---": "",
-       "Fórmula (Lógica Excel)": excelFriendly,  // <--- PRIMEIRO A VERSÃO LEGÍVEL
-       "Código Original (Server)": iaFormula,    // <--- DEPOIS O CÓDIGO TÉCNICO
+       "Fórmula (Lógica Excel)": excelFriendly,
+       "Código Original (Server)": iaFormula,
        "Nota Técnica": "O código original está em JavaScript (Google Apps Script). A lógica Excel acima é uma tradução aproximada para conferência.",
-       
        "--- ESTATÍSTICAS DO GRUPO ---": "",
        "Idade Média": `${avgAge} anos`,
        "Distribuição Sexo": `M: ${sexDist.M} | F: ${sexDist.F}`,
-       
        "--- RASTREABILIDADE ---": "",
        "Data Geração": new Date().toLocaleString(),
        "Sistema": "EUM Manager v6.7"
     };
 
-    // 6. RENDERIZA PAINEL (VISUAL)
     let auditDiv = document.getElementById('drill-audit-panel');
     if (!auditDiv) {
        auditDiv = document.createElement('div');
@@ -741,7 +629,6 @@ function openDrillDown(filterVal, xCol, yCol, isGrouped) {
         <div style="font-family:monospace; color:#64748b; font-size:0.7rem;">Ref: ${iaFormula.substring(0,30)}...</div>
       </div>`;
 
-    // 7. MONTA TABELA (USANDO SAFEDATE)
     const tbody = document.getElementById('drill-table-body');
     const thead = document.getElementById('drill-thead');
     tbody.innerHTML = '';
@@ -763,11 +650,11 @@ function openDrillDown(filterVal, xCol, yCol, isGrouped) {
        // ★ CORREÇÃO DA DATA NA TABELA VISUAL
        let dt = safeDate(r['DT_REFERENCIA']); 
        
-       let sexHtml = sex === 'M' ? `<span style="color:#2563eb;background:#eff6ff;padding:2px 6px;border-radius:4px;font-weight:bold">M</span>` : (sex === 'F' ? `<span style="color:#db2777;background:#fce7f3;padding:2px 6px;border-radius:4px;font-weight:bold">F</span>` : sex);
+       let sexHtml = sex.startsWith('M') ? `<span style="color:#2563eb;background:#eff6ff;padding:2px 6px;border-radius:4px;font-weight:bold">M</span>` : (sex.startsWith('F') ? `<span style="color:#db2777;background:#fce7f3;padding:2px 6px;border-radius:4px;font-weight:bold">F</span>` : sex);
        let valX = `<span class="val-highlight">${r[xCol]}</span>`;
        let valY = yCol ? (typeof r[yCol]==='number' ? r[yCol].toFixed(2) : r[yCol]) : '-';
-       let ctx = '';
-       if(r['MEDICAMENTO']) ctx += `<span class="ctx-badge">${r['MEDICAMENTO']}</span>`;
+       let ctx = (r['MEDICAMENTO'] || '');
+       if(r['_IDADE_ANOS']) ctx += (ctx ? ' | ' : '') + r['_IDADE_ANOS'] + ' anos';
 
        let row = `<tr><td>${pid}</td><td>${sexHtml}</td><td>${dt}</td><td>${valX}</td>`;
        if(yCol) row += `<td>${valY}</td>`;
@@ -775,78 +662,49 @@ function openDrillDown(filterVal, xCol, yCol, isGrouped) {
        tbody.innerHTML += row;
     });
   }
-  // --- EXPORTAÇÃO EXCEL "DOSSIÊ COMPLETO" ---
+
   function exportDrillExcel() {
     if (typeof XLSX === 'undefined') return alert("Erro: Biblioteca Excel não carregada.");
-    
-    // Verificações de segurança
     if (!currentDrillData || currentDrillData.length === 0) return alert("Sem dados selecionados.");
-    if (!globalChartData || globalChartData.length === 0) return alert("Sem dados globais.");
     
     try {
       const wb = XLSX.utils.book_new();
+      const auditRows = Object.keys(currentAuditInfo).map(key => ({ "Parâmetro": key, "Valor": currentAuditInfo[key] }));
 
-      // ---------------------------------------------------------
-      // 1. ABA AUDITORIA (Capa do Relatório)
-      // ---------------------------------------------------------
-      const auditRows = Object.keys(currentAuditInfo).map(key => ({
-         "Parâmetro": key,
-         "Valor": currentAuditInfo[key]
-      }));
-      // --- INSERÇÃO: TUTORIAL DE PROVA REAL ---
-      // Pega os totais da seleção atual
       let tReg = currentDrillData.length;
       let tPac = new Set(currentDrillData.map(r => r['_PID'] || r['PRONTUARIO'])).size;
       let regra = currentAuditInfo["Fórmula (Lógica Excel)"];
-
-      // Gera o texto e converte para linhas do Excel
       let textoTut = gerarTutorialValidacao(tReg, tPac, regra);
-      textoTut.split('\n').forEach(function(linha) {
-         auditRows.push({ "Parâmetro": linha, "Valor": "" }); 
-      });
-      // ----------------------------------------
+      
+      textoTut.split('\n').forEach(function(linha) { auditRows.push({ "Parâmetro": linha, "Valor": "" }); });
+      
       const wsAudit = XLSX.utils.json_to_sheet(auditRows);
-      wsAudit['!cols'] = [{wch: 25}, {wch: 50}]; // Ajusta largura
+      wsAudit['!cols'] = [{wch: 25}, {wch: 50}]; 
       XLSX.utils.book_append_sheet(wb, wsAudit, "1. Resumo_Auditoria");
 
-      // ---------------------------------------------------------
-      // 2. ABA DADOS SELECIONADOS (O Filtro Atual)
-      // ---------------------------------------------------------
-      // Formata os dados para ficarem bonitos no Excel
       const selectedFormatted = formatDataForExcel(currentDrillData);
       const wsSelected = XLSX.utils.json_to_sheet(selectedFormatted);
       XLSX.utils.book_append_sheet(wb, wsSelected, "2. Seleção_Atual");
 
-      // ---------------------------------------------------------
-      // 3. ABA DADOS BRUTOS TOTAIS (O Universo Completo)
-      // ---------------------------------------------------------
-      // Usa o 'globalChartData' que contém TUDO o que veio do servidor antes do clique
       const globalFormatted = formatDataForExcel(globalChartData);
       const wsGlobal = XLSX.utils.json_to_sheet(globalFormatted);
       XLSX.utils.book_append_sheet(wb, wsGlobal, "3. Dados_Brutos_Geral");
 
-      // Salva o Arquivo
       XLSX.writeFile(wb, "EUM_Dossie_Completo.xlsx");
 
     } catch(e) { alert("Erro ao gerar Excel: " + e.message); }
   }
 
-  // Helper para limpar os dados antes de ir para o Excel
-  // (Remove colunas de sistema e formata datas)
  function formatDataForExcel(dataList) {
      return dataList.map(r => {
         const clean = {};
-        // Colunas Fixas
         clean['ID_PACIENTE'] = r['PRONTUARIO'] || r['_PID'];
         clean['SEXO'] = r['_SEXO'] || '-';
         clean['IDADE'] = r['_IDADE_ANOS'] || 0;
-        
-        // ★ CORREÇÃO DA DATA NO EXCEL
         clean['DATA_REF'] = safeDate(r['DT_REFERENCIA']);
         
         if(currentXAxis) clean[`EIXO_X (${currentXAxis})`] = r[currentXAxis];
         
-        // Restante
         Object.keys(r).forEach(k => { 
            if(!k.startsWith('_') && !['PRONTUARIO','DT_REFERENCIA', currentXAxis].includes(k)) {
               clean[k] = r[k]; 
@@ -877,49 +735,34 @@ function openDrillDown(filterVal, xCol, yCol, isGrouped) {
      }
   }
 
- // --- FUNÇÃO DE ENVIAR PARA O RELATÓRIO (VERSÃO UNIVERSAL) ---
   function sendTableToReport() {
     if (!currentDrillData || currentDrillData.length === 0) return alert("Sem dados para enviar.");
-
-    // 1. PREPARAÇÃO DOS DADOS (Higienização)
     const cleanData = currentDrillData.map(r => {
         const row = {};
-        
-        // IDs e Sexo
         row["ID"] = r['PRONTUARIO'] || r['_PID'] || '-';
         row["Sexo"] = r['_SEXO'] || '-'; 
-        
-        // Data (Segura)
         row["Data"] = (typeof safeDate === 'function') ? safeDate(r['DT_REFERENCIA']) : (r['DT_REFERENCIA'] || '-');
         
-        // Coluna do Filtro (Sem duplicar)
         if (typeof currentXCol !== 'undefined' && currentXCol && currentXCol !== 'SEXO' && currentXCol !== 'GENERO' && currentXCol !== 'DATA') {
            row[currentXCol] = r[currentXCol] || '-';
         }
-        
-        // Contexto
         let ctx = (r['MEDICAMENTO'] || '');
         if (r['_IDADE_ANOS']) ctx += (ctx ? ' | ' : '') + r['_IDADE_ANOS'] + ' anos';
         row["Contexto"] = ctx || '-';
-
         return row;
     });
 
-    // 2. BUSCA DO DESTINO (A CORREÇÃO ESTÁ AQUI)
-    // Tenta encontrar a função 'addToReport' em qualquer lugar possível
     let targetWindow = null;
-
     if (window.opener && !window.opener.closed && window.opener.addToReport) {
-        targetWindow = window.opener; // É um Pop-up
+        targetWindow = window.opener; 
     } else if (window.parent && window.parent.addToReport) {
-        targetWindow = window.parent; // É um iFrame
+        targetWindow = window.parent; 
     } else if (window.top && window.top.addToReport) {
-        targetWindow = window.top; // É um iFrame aninhado
+        targetWindow = window.top; 
     } else if (window.addToReport) {
-        targetWindow = window; // É a mesma janela
+        targetWindow = window; 
     }
 
-    // 3. ENVIO
     if (targetWindow) {
          try {
              targetWindow.addToReport({
@@ -928,24 +771,14 @@ function openDrillDown(filterVal, xCol, yCol, isGrouped) {
                 data: cleanData,
                 source: 'Explorador'
              });
-             
-             // Feedback Visual
              const btn = document.querySelector('button[onclick="sendTableToReport()"]');
              const originalText = btn ? btn.innerText : "📌 Enviar p/ Relatório";
              if(btn) btn.innerText = "Enviado! ✓";
              setTimeout(() => { if(btn) btn.innerText = originalText; }, 2000);
-             
          } catch(e) { alert("Erro ao transferir dados: " + e.message); }
     } else {
-         // Se falhar tudo, mostra o alerta original
          alert("Erro de Conexão: O sistema não encontrou a aba 'Relatório' ativa.\nCertifique-se que o painel principal (LabHome) está carregado.");
     }
-  }
-
-  function exportExplorerToStack() {
-     if(!globalChartData || globalChartData.length===0) return alert("Gere o gráfico primeiro.");
-     if(window.addToStack) window.addToStack('Explorador', 'Dados Explorados', globalChartData, 'val');
-     else alert("Fusão não disponível.");
   }
 
   function closeDrillDown() {
@@ -966,8 +799,9 @@ function openDrillDown(filterVal, xCol, yCol, isGrouped) {
         const cfg = res.config;
         activeFilterScript = cfg.filter; activeVirtualFields = cfg.virtualFields || [];
         injectAndSelect('sel-x', cfg.xAxis); injectAndSelect('sel-y', cfg.yAxis || ""); injectAndSelect('sel-type', cfg.chartType);
-        if (cfg.group !== undefined) document.getElementById('chk-agrupar-paciente').checked = !!cfg.group;
         
+        document.getElementById('chk-agrupar-paciente').checked = !!cfg.group; // Força o checkbox conforme a IA
+
         addChatBubble(`📊 ${cfg.explanation}`, 'bot');
         
         if(activeFilterScript && activeFilterScript!=='true') {
@@ -986,29 +820,15 @@ function openDrillDown(filterVal, xCol, yCol, isGrouped) {
 
   function translateJsToHuman(jsCode) {
     if (!jsCode || jsCode === 'true' || jsCode.startsWith("Nenhuma")) return "Todos os dados (Sem filtros)";
-    
     let human = jsCode;
-
-    // 1. Limpa sintaxe técnica
     human = human.replace(/row\['(.*?)'\]/g, "$1");
-    
-    // 2. INTERVALOS (Mantém lógica humana)
     const rangeRegex = /([a-zA-Z0-9_]+)\s*>=\s*([0-9.]+)\s*&&\s*\1\s*<=\s*([0-9.]+)/;
     const match = human.match(rangeRegex);
-    if (match) {
-        human = human.replace(rangeRegex, `${match[1]} _ENTRE_ ${match[2]} e ${match[3]}`);
-    }
-
-    // 3. NOMES DE COLUNAS (Ajuste fino para o seu Excel)
+    if (match) { human = human.replace(rangeRegex, `${match[1]} _ENTRE_ ${match[2]} e ${match[3]}`); }
     human = human.replace(/_IDADE_ANOS/g, "IDADE");
     human = human.replace(/_SEXO/g, "SEXO");
     human = human.replace(/_PID|PRONTUARIO/g, "ID_PACIENTE");
     human = human.replace(/DT_REFERENCIA/g, "DATA_REF");
-    
-    // 4. MATEMÁTICA (A CORREÇÃO: Mantemos os símbolos!)
-    // Não substituímos / por "DIVIDIDO", deixamos quieto.
-    
-    // 5. OPERADORES (Usamos _underscores_ para facilitar o recorte depois)
     human = human.replace(/&&/g, " E ");
     human = human.replace(/\|\|/g, " OU ");
     human = human.replace(/==/g, " _IGUAL_ ");
@@ -1017,42 +837,34 @@ function openDrillDown(filterVal, xCol, yCol, isGrouped) {
     human = human.replace(/<=/g, " _MENOR_IGUAL_ ");
     human = human.replace(/>/g, " _MAIOR_ ");
     human = human.replace(/</g, " _MENOR_ ");
-    
     return human;
   }
 
-  // --- HELPER: CORREÇÃO DE DATAS ---
   function safeDate(val) {
     if (!val) return '-';
-    // Se já for um objeto Data real
     if (val instanceof Date) return val.toLocaleDateString();
-    
-    // Se for string
     if (typeof val === 'string') {
-       // Se já tiver barras (01/04/2025), devolve direto (evita Invalid Date)
        if (val.includes('/')) return val; 
-       // Se for ISO (2025-04-01T...), tenta converter
        if (val.includes('T') || val.includes('-')) {
           const d = new Date(val);
           return isNaN(d) ? val : d.toLocaleDateString();
        }
     }
-    return val; // Retorna o original se não souber o que fazer
+    return val; 
+  }
+  
+  function safeMathEval(expression) {
+    if (!/^[0-9\.\+\-\*\/\(\)\s]+$/.test(expression)) return "#ERRO_SEGURANCA";
+    try { return new Function('return ' + expression)(); } catch (e) { return "#ERRO_CALC"; }
   }
 
- // --- VERSÃO 3.0: BLOCO COMPLETO (BUSCA + GERAÇÃO) ---
-
-// 1. FUNÇÃO QUE BUSCA OS DADOS (O BOTÃO CHAMA ESTA)
 function exportGlobalExcel() {
   if (typeof XLSX === 'undefined') return alert("Erro: Biblioteca Excel não carregada.");
   if (!globalChartData || globalChartData.length === 0) return alert("Ainda não há dados carregados.");
 
   const sheet = document.getElementById('sel-source').value;
-  
-  // Descobre quais colunas baixar (baseado no que já tem no gráfico)
   let colsToFetch = Object.keys(globalChartData[0]).filter(k => k !== 'rowNum' && k !== '_rawRows');
   
-  // Feedback Visual no Botão
   const btn = document.querySelector('button[onclick="exportGlobalExcel()"]');
   const originalText = btn ? btn.innerText : "Excel Geral";
   if(btn) { 
@@ -1060,17 +872,10 @@ function exportGlobalExcel() {
       btn.disabled = true; 
   }
 
-  // Vai ao servidor buscar os dados SEM FILTRO (null)
   google.script.run
     .withSuccessHandler(res => {
         if(btn) { btn.innerHTML = originalText; btn.disabled = false; }
-        
-        // Verifica erros e extrai a lista '.dados'
-        if (!res || !res.sucesso) {
-           return alert("Erro ao baixar dados: " + (res ? res.erro : "Resposta desconhecida"));
-        }
-
-        // Chama a Parte 2 passando a lista de dados
+        if (!res || !res.sucesso) return alert("Erro ao baixar dados: " + (res ? res.erro : "Resposta desconhecida"));
         generateTrueAuditExcel(res.dados);
     })
     .withFailureHandler(err => {
@@ -1080,77 +885,46 @@ function exportGlobalExcel() {
     .apiGetRawExplorerData(sheet, colsToFetch, null, activeVirtualFields); 
 }
 
-// --- VERSÃO 6.0: GERAÇÃO COM COLUNA CALCULADA AUTOMÁTICA ---
   function generateTrueAuditExcel(fullData) {
       try {
         const wb = XLSX.utils.book_new();
-
-        // 1. PREPARAÇÃO INTELIGENTE (Detecta se precisa criar coluna extra)
         let prompt = document.getElementById('filter-desc') ? document.getElementById('filter-desc').innerText : "Nenhum";
         let formula = (activeFilterScript && activeFilterScript !== 'true') ? activeFilterScript : "Nenhuma (Todos os dados)";
         let excelFriendly = (typeof translateJsToHuman === 'function') ? translateJsToHuman(formula) : formula;
 
-        // Detecta matemática na regra (ex: DOSE / PESO)
         let colunaExtraNome = null;
         let expressaoMath = null;
-        
-        // Verifica se o tradutor encontrou operadores matemáticos
-        // (Baseado na nossa lógica v5.0 que mantém os símbolos)
-        var partes = excelFriendly.split(/ _.*?_ /); // Separa antes do operador (MAIOR, MENOR, etc)
+        var partes = excelFriendly.split(/ _.*?_ /); 
         var ladoEsquerdo = partes[0] ? partes[0].trim() : "";
         
-        if (ladoEsquerdo.match(/[\/*+-]/)) { // Se tem matemática (+ - * /)
+        if (ladoEsquerdo.match(/[\/*+-]/)) { 
              colunaExtraNome = "AUDITORIA_CALC";
-             expressaoMath = ladoEsquerdo; // Ex: DOSE_24HS / PESO
+             expressaoMath = ladoEsquerdo; 
         }
 
-        // 2. PROCESSAMENTO DOS DADOS BRUTOS (Injeta a coluna calculada)
         let cleanGlobal = fullData.map(r => {
-             // Formata o dado base
              let row = (typeof formatDataForExcel === 'function') ? formatDataForExcel([r])[0] : r;
              
-             // SE PRECISAR, CALCULA O VALOR EXTRA LINHA POR LINHA
              if (colunaExtraNome && expressaoMath) {
                  try {
-                     // Truque: Cria uma mini-função JS para calcular o valor usando os dados da linha
-                     // Substitui nomes das colunas pelos valores: DOSE_24HS -> 500
                      let conta = expressaoMath;
-                     
-                     // Varre as chaves da linha para substituir na fórmula
-                     // (Ordenamos por tamanho para evitar substituir 'PESO' dentro de 'PESO_TOTAL')
                      Object.keys(row).sort((a,b) => b.length - a.length).forEach(key => {
                          let val = row[key];
-                         // Se for numérico, usa direto. Se for nulo, usa 0.
                          val = (typeof val === 'number') ? val : 0;
-                         // Regex para substituir apenas a palavra inteira
                          let regexKey = new RegExp("\\b" + key + "\\b", "g");
                          conta = conta.replace(regexKey, val);
                      });
-                     
-                     // Executa a conta (eval seguro pois só tem números e operadores)
-                     // Cuidado: eval é perigoso em geral, mas aqui controlamos o input
-                     // Se preferir não usar eval, teríamos que fazer um parser simples.
-                     // Como é auditoria local, eval resolve rápido:
-                     let resultado = eval(conta); 
-                     
-                     // Arredonda e salva
+                     let resultado = safeMathEval(conta);
                      row[colunaExtraNome] = isFinite(resultado) ? Number(resultado.toFixed(2)) : 0;
-                     
-                 } catch(e) {
-                     row[colunaExtraNome] = "#ERRO";
-                 }
+                 } catch(e) { row[colunaExtraNome] = "#ERRO"; }
              }
              return row;
         });
 
-        // 3. ATUALIZA O TUTORIAL PARA USAR A COLUNA NOVA
         if (colunaExtraNome) {
-             // Reescreve a lógica humana para apontar para a nova coluna
-             // Ex: De "DOSE/PESO > 50" para "AUDITORIA_CALC > 50"
              excelFriendly = colunaExtraNome + excelFriendly.substring(ladoEsquerdo.length);
         }
 
-        // --- ABA 1: AUDITORIA ---
         let filteredCount = globalChartData.length;
         let filteredPac = new Set(globalChartData.map(r => r['_PID'] || r['PRONTUARIO'])).size;
 
@@ -1167,7 +941,6 @@ function exportGlobalExcel() {
         ];
 
         if(typeof gerarTutorialValidacao === 'function') {
-            // Passa flag 'true' se criamos coluna extra (você terá que ajustar a função gerarTutorialValidacao para aceitar isso, ou ela usa o texto novo)
             let gTexto = gerarTutorialValidacao(filteredCount, filteredPac, excelFriendly);
             gTexto.split('\n').forEach(l => auditRows.push({ "Parâmetro": l, "Valor": "" }));
         }
@@ -1176,7 +949,6 @@ function exportGlobalExcel() {
         wsAudit['!cols'] = [{wch: 25}, {wch: 60}];
         XLSX.utils.book_append_sheet(wb, wsAudit, "1. Auditoria_Geral");
 
-        // --- ABA 2: RESUMO ---
         if (typeof currentXAxis !== 'undefined' && currentXAxis) {
             const counts = {};
             globalChartData.forEach(r => { 
@@ -1187,7 +959,6 @@ function exportGlobalExcel() {
             XLSX.utils.book_append_sheet(wb, wsSummary, "2. Resumo_Agrupado");
         }
 
-        // --- ABA 3: DADOS BRUTOS (Agora com a coluna extra!) ---
         const wsData = XLSX.utils.json_to_sheet(cleanGlobal);
         XLSX.utils.book_append_sheet(wb, wsData, "3. Dados_Brutos_Completo");
 
@@ -1206,13 +977,10 @@ function gerarTutorialValidacao(totalRegistros, totalPacientes, regrasLogicas) {
     texto += "   1. Abra a aba '3. Dados_Brutos_Completo'.\n";
     texto += "   2. Ative os filtros (Dados > Filtro).\n";
     
-    // Tenta separar a "Esquerda" (Fórmula) da "Direita" (Valor) usando os separadores da v5.0
-    // Procura qualquer operador cercado por _ (ex: _MAIOR_)
     var partes = regrasLogicas.split(/ _.*?_ /); 
     var ladoEsquerdo = partes[0] ? partes[0].trim() : "";
-    var condicaoTexto = regrasLogicas; // Texto completo para leitura
+    var condicaoTexto = regrasLogicas; 
 
-    // A) CENÁRIO MATEMÁTICO (Tem barra ou asterisco na esquerda?)
     if (ladoEsquerdo.includes("/") || ladoEsquerdo.includes("*") || ladoEsquerdo.includes("+") || ladoEsquerdo.includes("-")) {
         texto += "   3. CÁLCULO NECESSÁRIO (Coluna Calculada):\n";
         texto += "      Esta regra não existe na tabela original. Você precisa criá-la.\n";
@@ -1222,17 +990,15 @@ function gerarTutorialValidacao(totalRegistros, totalPacientes, regrasLogicas) {
         texto += "      -> (Dica: O Excel pode pedir para você clicar nas células das colunas " + ladoEsquerdo + " em vez de digitar os nomes).\n";
         texto += "      -> Arraste a fórmula para baixo e filtre a coluna 'AUDITORIA' conforme a regra: " + regrasLogicas + "\n";
     } 
-    // B) CENÁRIO INTERVALO
     else if (regrasLogicas.includes("_ENTRE_")) {
         texto += "   3. Filtro de INTERVALO:\n";
         texto += "      -> Coluna: " + ladoEsquerdo + "\n";
         texto += "      -> Lógica: " + regrasLogicas.replace(/_ENTRE_/g, "entre") + "\n";
         texto += "      -> Use: Filtros de Número > 'Está entre...'\n";
     }
-    // C) CENÁRIO PADRÃO
     else {
         texto += "   3. Filtro PADRÃO:\n";
-        texto += "      -> Lógica: " + regrasLogicas.replace(/_/g, " ") + "\n"; // Remove underscores para leitura
+        texto += "      -> Lógica: " + regrasLogicas.replace(/_/g, " ") + "\n"; 
         texto += "      -> Use: Filtros de Número/Texto e escolha a condição.\n";
     }
     
