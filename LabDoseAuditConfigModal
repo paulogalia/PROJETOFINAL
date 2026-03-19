@@ -1,0 +1,94 @@
+<style>
+.dose-audit-config-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    max-width: 90%;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    z-index: 4000;
+    display: none;
+    flex-direction: column;
+    font-family: 'Inter', sans-serif;
+}
+.dose-audit-config-modal[open] {
+    display: flex;
+}
+.dose-audit-config-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 3999;
+    display: none;
+}
+.dose-audit-config-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.dose-audit-config-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+.dose-audit-config-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+.dose-audit-config-footer {
+    padding: 15px;
+    text-align: right;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+</style>
+
+<div class="dose-audit-config-overlay" id="dose-audit-config-overlay" onclick="closeDoseAuditConfig()"></div>
+<dialog id="dose-audit-config-modal" class="dose-audit-config-modal">
+    <div class="dose-audit-config-header">
+        <h3 class="dose-audit-config-title">Configurar Auditoria de Doses</h3>
+        <button onclick="closeDoseAuditConfig()" style="border:none; background:none; font-size:1.5rem; cursor:pointer; color:#94a3b8;">&times;</button>
+    </div>
+    <div class="dose-audit-config-body">
+        <p>Defina as regras para a auditoria de doses.</p>
+        <div class="form-group">
+            <label class="form-label">Medicamento</label>
+            <select id="sel-audit-med" class="form-select"></select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Dose Máxima</label>
+            <input type="number" id="inp-audit-max-dose" class="form-input" placeholder="e.g., 100">
+        </div>
+    </div>
+    <div class="dose-audit-config-footer">
+        <button onclick="closeDoseAuditConfig()" style="padding:8px 16px; border-radius:6px; border:1px solid #cbd5e1; background:white; cursor:pointer;">Cancelar</button>
+        <button onclick="startDoseAudit()" style="padding:8px 16px; border-radius:6px; background:#2563eb; color:white; border:none; cursor:pointer;">Executar Auditoria</button>
+    </div>
+</dialog>
+
+<script>
+    function startDoseAudit() {
+        const med = document.getElementById('sel-audit-med').value;
+        const maxDose = document.getElementById('inp-audit-max-dose').value;
+
+        if (!med || !maxDose) {
+            alert('Por favor, preencha todos os campos para a auditoria.');
+            return;
+        }
+
+        const config = {
+            medicamento: med,
+            maxDose: parseFloat(maxDose)
+        };
+
+        closeDoseAuditConfig();
+        runDoseAudit(config);
+    }
+</script>
