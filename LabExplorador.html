@@ -920,29 +920,54 @@ return dataList.map(r => {
 });
 }
 function sendChartToReport() {
-const div = document.getElementById('main-chart');
-if(!div.data) return alert("Sem gráfico.");
-if(window.top.addToReport) {
-  window.top.addToReport({ type: 'chart', title: document.querySelector('.gtitle')?.innerHTML || 'Gráfico', data: div.data, layout: div.layout });
-}
+  const div = document.getElementById('main-chart');
+  if (!div || !div.data) return alert("Sem gráfico para adicionar. Gere um gráfico primeiro.");
+ 
+  const titleEl = div.querySelector('.gtitle');
+  const title = titleEl ? titleEl.textContent : (document.getElementById('style-title').value || 'Gráfico');
+ 
+  if (typeof window.addToReport === 'function') {
+    window.addToReport({
+      type:   'chart',
+      title:  title,
+      source: 'Explorador',
+      data:   div.data,
+      layout: div.layout
+    });
+  } else {
+    alert("Erro: módulo de Relatório não encontrado. Verifique se LabRelatorio está incluído no LabHome.");
+  }
 }
 
 function sendTableToReport() {
-if (!currentDrillData || currentDrillData.length === 0) return alert("Sem dados para enviar.");
-const cleanData = currentDrillData.map(r => {
-  const row = {};
-  row["ID"] = r['PRONTUARIO'] || r['_PID'] || '-';
-  row["Sexo"] = r['_SEXO'] || '-'; 
-  row["Data"] = safeDate(r['DT_REFERENCIA']);
-  if (currentXCol && !['SEXO', 'DATA'].includes(currentXCol)) row[currentXCol] = r[currentXCol] || '-';
-  let ctx = (r['MEDICAMENTO'] || '');
-  if (r['_IDADE_ANOS']) ctx += (ctx ? ' | ' : '') + r['_IDADE_ANOS'] + ' anos';
-  row["Contexto"] = ctx || '-';
-  return row;
-});
-if (window.top.addToReport) {
-  window.top.addToReport({ type: 'table', title: `Detalhes: ${document.getElementById('drill-subtitle').innerText}`, data: cleanData });
-}
+  if (!currentDrillData || currentDrillData.length === 0) {
+    return alert("Sem dados na tabela para enviar.");
+  }
+ 
+  const cleanData = currentDrillData.map(r => {
+    const row = {};
+    row["ID"]   = r['PRONTUARIO'] || r['_PID'] || '-';
+    row["Sexo"] = r['_SEXO'] || '-';
+    row["Data"] = safeDate(r['DT_REFERENCIA']);
+    if (currentXCol && !['SEXO', 'DATA'].includes(currentXCol)) {
+      row[currentXCol] = r[currentXCol] || '-';
+    }
+    let ctx = (r['MEDICAMENTO'] || '');
+    if (r['_IDADE_ANOS']) ctx += (ctx ? ' | ' : '') + r['_IDADE_ANOS'] + ' anos';
+    row["Contexto"] = ctx || '-';
+    return row;
+  });
+ 
+  if (typeof window.addToReport === 'function') {
+    window.addToReport({
+      type:   'table',
+      title:  `Detalhes: ${document.getElementById('drill-subtitle').innerText}`,
+      source: 'Drill-Down',
+      data:   cleanData
+    });
+  } else {
+    alert("Erro: módulo de Relatório não encontrado. Verifique se LabRelatorio está incluído no LabHome.");
+  }
 }
 
 function closeDrillDown() {
