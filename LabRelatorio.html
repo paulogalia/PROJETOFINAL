@@ -22,7 +22,7 @@
   .rep-card-title { font-weight: 700; color: #334155; font-size: 1.1rem; }
   .rep-card-meta { font-size: 0.8rem; color: #94a3b8; }
   
-  /* ÁREAS DE LAUDO (NOVOS ESTILOS) */
+  /* ÁREAS DE LAUDO */
   .rep-ai-box {
     background: #f0fdf4; border-left: 4px solid #10b981; padding: 15px;
     margin-top: 25px; border-radius: 6px; color: #14532d; font-size: 0.9rem; line-height: 1.5;
@@ -38,11 +38,144 @@
   }
   .rep-textarea:focus { border-color: #3b82f6; outline: none; background: white; }
 
-  /* BOTÕES */
+  /* BARRA DE AÇÕES DO CARD */
+  .rep-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+  }
+
+  /* BOTÕES GERAIS */
   .btn-print { background: #1e293b; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
   .btn-print:hover { background: #0f172a; }
   
   .btn-clear { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+
+  /* BOTÃO SLIDES — ESTADO NORMAL */
+  .btn-slide {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.1s, box-shadow 0.18s;
+    white-space: nowrap;
+    /* Gradiente Google Slides-inspired */
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-slide::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .btn-slide:hover:not(:disabled) {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #2563eb 100%);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    transform: translateY(-1px);
+  }
+  .btn-slide:active:not(:disabled) { transform: translateY(0); }
+
+  /* ESTADO: LOADING */
+  .btn-slide.loading {
+    background: linear-gradient(135deg, #475569 0%, #64748b 100%);
+    box-shadow: none;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* ESTADO: SUCESSO */
+  .btn-slide.success {
+    background: linear-gradient(135deg, #065f46 0%, #059669 100%);
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  }
+
+  /* ESTADO: ERRO */
+  .btn-slide.error {
+    background: linear-gradient(135deg, #9f1239 0%, #dc2626 100%);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+    cursor: default;
+  }
+
+  /* ÍCONE SVG dentro do botão */
+  .btn-slide .slide-icon {
+    width: 14px; height: 14px; flex-shrink: 0;
+  }
+
+  /* SPINNER */
+  .btn-slide .btn-spinner {
+    width: 12px; height: 12px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: rep-spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes rep-spin { to { transform: rotate(360deg); } }
+
+  /* BOTÃO ABRIR APRESENTAÇÃO (aparece após sucesso) */
+  .btn-open-pres {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    background: #f0fdf4;
+    color: #065f46;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-open-pres:hover { background: #dcfce7; border-color: #86efac; }
+
+  /* BOTÃO RESET APRESENTAÇÃO (na toolbar) */
+  .btn-reset-slides {
+    background: transparent;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-reset-slides:hover { border-color: #94a3b8; color: #334155; }
+
+  /* TOAST DE NOTIFICAÇÃO */
+  .rep-toast {
+    position: fixed; bottom: 30px; right: 30px;
+    padding: 12px 20px; border-radius: 10px;
+    font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
+    z-index: 9999; display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    animation: toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-width: 380px;
+  }
+  .rep-toast.success { background: #10b981; color: #fff; }
+  .rep-toast.error   { background: #ef4444; color: #fff; }
+  .rep-toast.info    { background: #2563eb; color: #fff; }
+  @keyframes toastIn { from { opacity:0; transform:translateY(20px) scale(0.95); } to { opacity:1; transform:translateY(0) scale(1); } }
 </style>
 
 <div class="rep-container">
@@ -54,7 +187,14 @@
         Itens adicionados: <span id="rep-count">0</span>
       </div>
     </div>
-    <div style="display:flex; gap:10px;">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <button class="btn-reset-slides" onclick="confirmResetSlides()" title="Nova Apresentação Google Slides">
+        🔄 Nova Apresentação
+      </button>
+      <button id="btn-open-master-pres" class="btn-open-pres" style="display:none;" target="_blank">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M14 3H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-9l-7-7zm5 16H5V5h8v5h5v9zM7 17h10v-2H7v2zm0-4h10v-2H7v2zm0-4h7V7H7v2z"/></svg>
+        Ver Apresentação
+      </button>
       <button class="btn-clear" onclick="clearReport()">Limpar Tudo</button>
       <button class="btn-print" onclick="triggerPrint()">
         <span class="material-icons-round">print</span> Imprimir PDF
@@ -74,6 +214,12 @@
 <script>
   if (!window.REPORT_ITEMS) window.REPORT_ITEMS = [];
 
+  // Estado global da apresentação (URL após primeiro export)
+  let _slidesPresUrl = null;
+
+  // ============================================================
+  // RENDERIZAÇÃO DOS CARDS
+  // ============================================================
   function refreshReportView() {
     const container = document.getElementById('rep-content');
     const count = document.getElementById('rep-count');
@@ -90,6 +236,7 @@
     window.REPORT_ITEMS.forEach((item, index) => {
       const card = document.createElement('div');
       card.className = 'rep-card';
+      card.id = `rep-card-${index}`;
       const chartId = `rep-chart-${index}`;
       
       let contentHtml = '';
@@ -99,14 +246,16 @@
          contentHtml = renderTableHtml(item.data);
       }
 
-      // Constrói o HTML com as áreas de texto novas
+      // Ícone SVG para o botão Slides
+      const slidesIconSvg = `<svg class="slide-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M14 3H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-9l-7-7zm5 16H5V5h8v5h5v9zM7 17h10v-2H7v2zm0-4h10v-2H7v2zm0-4h7V7H7v2z"/></svg>`;
+
       card.innerHTML = `
         <div class="rep-card-header">
           <div>
-            <div class="rep-card-title">${item.title}</div>
-            <div class="rep-card-meta">${item.timestamp} • Origem: ${item.source}</div>
+            <div class="rep-card-title">${item.title || 'Sem Título'}</div>
+            <div class="rep-card-meta">${item.timestamp} · Origem: ${item.source || 'Explorador'}</div>
           </div>
-          <button class="rep-remove" onclick="removeItem(${index})" style="color:#ef4444; background:none; border:none; cursor:pointer; font-weight:bold;">✕</button>
+          <button onclick="removeItem(${index})" style="color:#ef4444; background:none; border:none; cursor:pointer; font-weight:bold; font-size:1.3rem; line-height:1;">✕</button>
         </div>
         
         ${contentHtml}
@@ -122,27 +271,227 @@
              placeholder="Escreva as suas observações clínicas aqui..." 
              oninput="saveComment(${index}, this.value)">${item.userComment || ''}</textarea>
         </div>
+
+        <div class="rep-card-actions">
+          <button
+            id="btn-slide-${index}"
+            class="btn-slide"
+            onclick="exportToSlide(${index})"
+            title="Exportar este item para um slide da apresentação Google Slides">
+            ${slidesIconSvg}
+            Exportar para Slide
+          </button>
+          <span id="slide-link-${index}" style="display:none;"></span>
+        </div>
       `;
       
       container.appendChild(card);
 
       if (item.type === 'chart') {
         setTimeout(() => {
-           Plotly.newPlot(chartId, item.data, item.layout, {staticPlot: false, responsive: true}); 
+           Plotly.newPlot(chartId, item.data, item.layout, { staticPlot: false, responsive: true }); 
         }, 50);
       }
     });
+
+    // Atualiza botão de ver apresentação se URL já existe
+    updateMasterPresButton();
   }
 
-  // Salva o comentário na memória global
+  // ============================================================
+  // EXPORTAÇÃO PARA GOOGLE SLIDES
+  // ============================================================
+
+  /**
+   * Exporta o item do índice fornecido para um slide da apresentação EUM.
+   * Para gráficos, captura a imagem atual em alta resolução via Plotly.toImage.
+   * @param {number} index - Índice em window.REPORT_ITEMS
+   */
+  async function exportToSlide(index) {
+    const item = window.REPORT_ITEMS[index];
+    if (!item) return showToast('Item não encontrado.', 'error');
+
+    const btn = document.getElementById(`btn-slide-${index}`);
+    const linkSpan = document.getElementById(`slide-link-${index}`);
+    if (!btn) return;
+
+    // --- Estado: LOADING ---
+    btn.disabled = true;
+    btn.className = 'btn-slide loading';
+    btn.innerHTML = `<span class="btn-spinner"></span> Processando...`;
+
+    try {
+      // Prepara o payload para o backend
+      const payload = {
+        title:       item.title || 'Evidência Clínica',
+        type:        item.type,
+        timestamp:   item.timestamp || new Date().toLocaleString(),
+        source:      item.source || 'EUM Manager',
+        userComment: item.userComment || '',
+        imageBase64: null,
+        tableData:   null
+      };
+
+      // --- CAPTURA DE IMAGEM (apenas para gráficos) ---
+      if (item.type === 'chart') {
+        btn.innerHTML = `<span class="btn-spinner"></span> Capturando Gráfico...`;
+
+        try {
+          // Alta resolução: 1600×900 para slides (16:9)
+          const imgDataUrl = await Plotly.toImage(
+            { data: item.data, layout: Object.assign({}, item.layout, { autosize: false, width: 1600, height: 900 }) },
+            { format: 'png', width: 1600, height: 900 }
+          );
+          payload.imageBase64 = imgDataUrl;
+        } catch (imgError) {
+          // Tenta via div renderizado como fallback
+          const chartDiv = document.getElementById(`rep-chart-${index}`);
+          if (chartDiv && chartDiv.data) {
+            try {
+              payload.imageBase64 = await Plotly.toImage(chartDiv, { format: 'png', width: 1600, height: 900 });
+            } catch (e2) {
+              // Sem imagem — backend criará slide sem figura
+              payload.imageBase64 = null;
+            }
+          }
+        }
+      }
+
+      // --- DADOS DE TABELA ---
+      if (item.type === 'table' && item.data) {
+        payload.tableData = item.data.slice(0, 20); // Envia até 20 linhas
+      }
+
+      // --- CHAMADA AO BACKEND ---
+      btn.innerHTML = `<span class="btn-spinner"></span> Enviando...`;
+
+      google.script.run
+        .withSuccessHandler(function(res) { onSlideExportSuccess(res, index, btn, linkSpan, item); })
+        .withFailureHandler(function(err) { onSlideExportError(err, btn); })
+        .apiExportItemToSlide(payload);
+
+    } catch (unexpectedErr) {
+      onSlideExportError({ message: unexpectedErr.message }, btn);
+    }
+  }
+
+  /**
+   * Callback de sucesso após export para o slide.
+   */
+  function onSlideExportSuccess(res, index, btn, linkSpan, item) {
+    if (!res || !res.sucesso) {
+      onSlideExportError({ message: res ? res.erro : 'Resposta inválida do servidor.' }, btn);
+      return;
+    }
+
+    // Guarda URL da apresentação globalmente
+    _slidesPresUrl = res.url;
+    PropertiesService_set_workaround(res.url); // persistência em memória local
+    updateMasterPresButton();
+
+    // --- Estado: SUCESSO ---
+    const slidesIconSvg = `<svg class="slide-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`;
+    btn.className = 'btn-slide success';
+    btn.innerHTML = `${slidesIconSvg} Slide #${res.slideNumber} Criado`;
+    btn.disabled = false;
+
+    // Link para abrir diretamente
+    if (linkSpan) {
+      linkSpan.style.display = 'inline-flex';
+      linkSpan.innerHTML = `
+        <a href="${res.url}" target="_blank" class="btn-open-pres">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+          Abrir Slide #${res.slideNumber}
+        </a>`;
+    }
+
+    showToast(`✅ Slide #${res.slideNumber} adicionado à apresentação!`, 'success');
+
+    // Redefine o botão para estado inicial após 5 segundos
+    setTimeout(() => {
+      const slidesIcon = `<svg class="slide-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M14 3H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-9l-7-7zm5 16H5V5h8v5h5v9zM7 17h10v-2H7v2zm0-4h10v-2H7v2zm0-4h7V7H7v2z"/></svg>`;
+      if (btn) {
+        btn.className = 'btn-slide';
+        btn.innerHTML = `${slidesIcon} Exportar Novamente`;
+        btn.disabled = false;
+      }
+    }, 5000);
+  }
+
+  /**
+   * Callback de falha após export para o slide.
+   */
+  function onSlideExportError(err, btn) {
+    console.error('Erro no export de Slide:', err);
+    btn.className = 'btn-slide error';
+    btn.innerHTML = `⚠️ Erro — Tentar Novamente`;
+    btn.disabled = false;
+    // Restaura para btn-slide normal ao clicar
+    btn.onclick = function() {
+      btn.className = 'btn-slide';
+      const slidesIcon = `<svg class="slide-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M14 3H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-9l-7-7zm5 16H5V5h8v5h5v9zM7 17h10v-2H7v2zm0-4h10v-2H7v2zm0-4h7V7H7v2z"/></svg>`;
+      btn.innerHTML = `${slidesIcon} Exportar para Slide`;
+      btn.disabled = false;
+      // Re-bind ao índice original
+      const idMatch = btn.id.match(/btn-slide-(\d+)/);
+      if (idMatch) { btn.onclick = () => exportToSlide(parseInt(idMatch[1])); }
+    };
+    showToast('❌ Falha: ' + (err.message || 'Erro desconhecido'), 'error');
+  }
+
+  // ============================================================
+  // GESTÃO DA APRESENTAÇÃO MASTER
+  // ============================================================
+
+  function updateMasterPresButton() {
+    const openBtn = document.getElementById('btn-open-master-pres');
+    if (!openBtn) return;
+    if (_slidesPresUrl) {
+      openBtn.style.display = 'inline-flex';
+      openBtn.onclick = () => window.open(_slidesPresUrl, '_blank');
+    } else {
+      // Tenta carregar do backend se não tiver em memória
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.sucesso && res.url) {
+            _slidesPresUrl = res.url;
+            openBtn.style.display = 'inline-flex';
+            openBtn.onclick = () => window.open(res.url, '_blank');
+          }
+        })
+        .withFailureHandler(function() { /* silencioso */ })
+        .apiGetSlidesUrl();
+    }
+  }
+
+  function confirmResetSlides() {
+    if (!confirm('Criar uma nova apresentação?\n\nOs slides anteriores não serão apagados, mas os próximos exports irão para uma nova apresentação.')) return;
+    _slidesPresUrl = null;
+    const openBtn = document.getElementById('btn-open-master-pres');
+    if (openBtn) openBtn.style.display = 'none';
+    google.script.run
+      .withSuccessHandler(function(res) {
+        showToast('🆕 Nova apresentação será criada no próximo export.', 'info');
+      })
+      .withFailureHandler(function(err) { showToast('Erro: ' + err.message, 'error'); })
+      .apiResetSlidesPresentation();
+  }
+
+  // Workaround: Persiste URL em memória de sessão (não usa localStorage por restrição do sandbox)
+  function PropertiesService_set_workaround(url) { _slidesPresUrl = url; }
+
+  // ============================================================
+  // FUNÇÕES EXISTENTES (mantidas intactas)
+  // ============================================================
+
   function saveComment(index, text) {
-    if(window.REPORT_ITEMS[index]) {
+    if (window.REPORT_ITEMS[index]) {
        window.REPORT_ITEMS[index].userComment = text;
     }
   }
 
   function renderTableHtml(rows) {
-    if(!rows || rows.length === 0) return '<p>Sem dados.</p>';
+    if (!rows || rows.length === 0) return '<p>Sem dados.</p>';
     let html = '<table style="width:100%; border-collapse:collapse; font-size:0.8rem;"><thead><tr>';
     Object.keys(rows[0]).forEach(k => html += `<th style="text-align:left; padding:8px; border-bottom:2px solid #e2e8f0; background:#f8fafc; color:#475569;">${k}</th>`);
     html += '</tr></thead><tbody>';
@@ -155,7 +504,6 @@
     return html;
   }
 
-  // --- SUA FUNÇÃO DE IMPRESSÃO (Melhorada com Textos) ---
   async function triggerPrint() {
     if (!window.REPORT_ITEMS || window.REPORT_ITEMS.length === 0) {
       alert('O relatório está vazio.');
@@ -180,17 +528,14 @@
           </div>
       `;
 
-      // 1. Renderiza Conteúdo Visual
       if (item.type === 'table') {
         htmlContent += renderTableHtml(item.data);
       } else if (item.type === 'chart') {
         try {
-          // Converte gráfico em imagem estática para o PDF
-          const imgData = await Plotly.toImage({
-            data: item.data,
-            layout: Object.assign({}, item.layout, { autosize: true })
-          }, { format: 'png', width: 800, height: 500 });
-
+          const imgData = await Plotly.toImage(
+            { data: item.data, layout: Object.assign({}, item.layout, { autosize: true }) },
+            { format: 'png', width: 800, height: 500 }
+          );
           htmlContent += `
             <div style="text-align:center; margin-top:16px; margin-bottom:20px;">
               <img src="${imgData}" style="max-width:100%; height:auto;">
@@ -201,7 +546,6 @@
         }
       }
 
-      // 2. Adiciona Texto da IA (Se existir)
       if (item.aiText) {
          htmlContent += `
            <div style="margin-top:20px; padding:12px; background:#f0fdf4; border-left:4px solid #10b981; font-size:0.9rem; color:#14532d;">
@@ -210,9 +554,7 @@
          `;
       }
 
-      // 3. Adiciona Comentário do Usuário (Se existir)
       if (item.userComment) {
-         // Converte quebras de linha em <br> para sair certo no HTML
          const formattedComment = item.userComment.replace(/\n/g, '<br>');
          htmlContent += `
            <div style="margin-top:20px; padding:15px; background:#fafafa; border:1px solid #e5e7eb; border-radius:8px; font-size:1rem; color:#374151;">
@@ -221,10 +563,9 @@
          `;
       }
 
-      htmlContent += `</div>`; // Fecha Card
+      htmlContent += `</div>`;
     }
 
-    // Abre Janela de Impressão
     const printWindow = window.open('', '_blank');
     if (!printWindow) { alert('Pop-up bloqueado.'); return; }
 
@@ -247,12 +588,7 @@
     
     printWindow.document.close();
     printWindow.focus();
-    
-    // Aguarda imagens carregarem
-    setTimeout(() => {
-      printWindow.print();
-      // printWindow.close(); // Opcional
-    }, 800);
+    setTimeout(() => { printWindow.print(); }, 800);
   }
 
   function removeItem(index) {
@@ -261,25 +597,43 @@
   }
 
   function clearReport() {
-    if(confirm("Limpar?")) {
+    if (confirm('Limpar?')) {
       window.REPORT_ITEMS = [];
       refreshReportView();
     }
   }
 
+  // ============================================================
+  // TOAST DE NOTIFICAÇÃO
+  // ============================================================
+  function showToast(message, type) {
+    // Remove toasts existentes
+    document.querySelectorAll('.rep-toast').forEach(t => t.remove());
+    const toast = document.createElement('div');
+    toast.className = `rep-toast ${type || 'info'}`;
+    toast.innerHTML = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.transition = 'opacity 0.4s ease';
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 400);
+    }, type === 'error' ? 5000 : 3000);
+  }
+
+  // ============================================================
+  // PONTO DE ENTRADA GLOBAL (addToReport)
+  // ============================================================
   window.addToReport = function(item) {
     if (!window.REPORT_ITEMS) window.REPORT_ITEMS = [];
     item.timestamp = new Date().toLocaleString();
     window.REPORT_ITEMS.push(item);
-    
-    const badge = document.createElement('div');
-    badge.innerHTML = `<span class="material-icons-round" style="vertical-align:middle; margin-right:5px;">check_circle</span> Adicionado`;
-    badge.style.cssText = "position:fixed; bottom:30px; right:30px; background:#10b981; color:white; padding:12px 24px; border-radius:8px; z-index:9999; font-weight:bold; box-shadow:0 10px 20px rgba(0,0,0,0.2); animation: fadeIn 0.3s;";
-    document.body.appendChild(badge);
-    setTimeout(() => badge.remove(), 2500);
-    
+    showToast(`<span class="material-icons-round" style="font-size:16px;vertical-align:middle;">check_circle</span> Adicionado ao relatório`, 'success');
     refreshReportView(); 
   };
   
-  setTimeout(refreshReportView, 500);
+  // Inicialização
+  setTimeout(function() {
+    refreshReportView();
+    updateMasterPresButton();
+  }, 500);
 </script>
