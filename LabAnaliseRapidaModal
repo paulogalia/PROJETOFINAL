@@ -1,0 +1,444 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    /* Estilos gerais da modal */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.6);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+    .modal-content {
+      background-color: white;
+      padding: 25px 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+    .modal-close-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #888;
+    }
+    h4 {
+      margin-top: 0;
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 10px;
+    }
+    p {
+      color: #555;
+      font-size: 14px;
+    }
+    .modal-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .modal-options button {
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #f8f9fa;
+      cursor: pointer;
+      text-align: left;
+      font-size: 14px;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+    .modal-options button:hover {
+      background-color: #e9ecef;
+      border-color: #007bff;
+    }
+
+    /* Estilos para botões de ação e navegação */
+    .back-button {
+        background: none;
+        border: none;
+        font-size: 16px;
+        cursor: pointer;
+        color: #007bff;
+        padding: 0 0 10px 0;
+        font-weight: bold;
+    }
+    .action-button {
+        background-color: #28a745;
+        color: white;
+        padding: 12px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 20px;
+        width: 100%;
+        font-size: 16px;
+        font-weight: bold;
+    }
+    .action-button:hover {
+        background-color: #218838;
+    }
+
+    /* Estilos para o Construtor e Sandbox */
+    .tool-section {
+        margin-top: 20px;
+        border-top: 1px solid #eee;
+        padding-top: 15px;
+    }
+    .tool-section h5 {
+        margin-bottom: 10px;
+        color: #0056b3;
+    }
+    .input-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 2fr;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+     .input-row input, .input-row select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    #age-range-container .input-row {
+         grid-template-columns: 80px 80px 1fr 40px;
+    }
+    #sandbox-rule-builder {
+        display: grid;
+        grid-template-columns: 1fr 100px 1fr;
+        gap: 10px;
+    }
+    .remove-row-btn {
+        background: none;
+        border: none;
+        color: #dc3545;
+        font-size: 20px;
+        cursor: pointer;
+        text-align: center;
+    }
+    .form-group {
+        margin-bottom: 15px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        font-size: 13px;
+        color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div id="analise-rapida-modal" class="modal-backdrop">
+    <div class="modal-content">
+      <button class="modal-close-btn" onclick="closeAnalysisModal()">&times;</button>
+      
+      <!-- Tela Principal: Menu de Ferramentas -->
+      <div id="modal-main-menu">
+        <h4>Ferramentas de Análise</h4>
+        <p>Selecione uma ferramenta para começar a explorar seus dados.</p>
+        <div class="modal-options">
+          <button onclick="showScreen('modal-template-list')">Modelos de Análise Rápida</button>
+          <button onclick="showScreen('modal-builder-view')">Construtor de Gráfico Manual</button>
+          <button onclick="showScreen('modal-sandbox-view')">Sandbox de Regras</button>
+          <button onclick="showScreen('modal-dose-audit-view')">Auditoria de Dose</button>
+        </div>
+      </div>
+      
+      <!-- Tela 1: Lista de Modelos (Original) -->
+      <div id="modal-template-list" style="display:none;">
+        <button class="back-button" onclick="showScreen('modal-main-menu')">&larr; Voltar ao Menu</button>
+        <h4>Modelos de Análise Rápida</h4>
+        <p>Clique em um modelo para gerar o gráfico instantaneamente com as colunas padrão.</p>
+        <div class="modal-options" id="template-buttons-container"></div>
+      </div>
+
+      <!-- Tela 2: Construtor de Gráfico Manual -->
+      <div id="modal-builder-view" style="display:none;">
+        <button class="back-button" onclick="showScreen('modal-main-menu')">&larr; Voltar ao Menu</button>
+        <h4>Construtor de Gráfico Manual</h4>
+        <div class="tool-section">
+            <h5>Histograma por Faixa Etária</h5>
+            <p>Defina as faixas de idade, nomeie-as e o sistema contará quantos pacientes há em cada uma.</p>
+            <div id="age-range-container">
+                <!-- Linhas de faixa etária serão adicionadas aqui -->
+            </div>
+            <button onclick="addAgeRangeRow()">+ Adicionar Faixa</button>
+        </div>
+        <button class="action-button" onclick="generateCustomHistogram()">Gerar Gráfico de Barras</button>
+      </div>
+
+      <!-- Tela 3: Sandbox de Regras -->
+      <div id="modal-sandbox-view" style="display:none;">
+        <button class="back-button" onclick="showScreen('modal-main-menu')">&larr; Voltar ao Menu</button>
+        <h4>Sandbox de Regras</h4>
+        <p>Destaque dados no gráfico aplicando uma regra. Isso não altera o gráfico, apenas evidencia os pontos que atendem à condição.</p>
+        <div class="tool-section">
+            <h5>Definir Regra de Destaque</h5>
+            <div id="sandbox-rule-builder">
+                <select id="sandbox-column"></select>
+                <select id="sandbox-operator">
+                    <option value=">">&gt;</option>
+                    <option value="<">&lt;</option>
+                    <option value="==">==</option>
+                    <option value="!=">!=</option>
+                </select>
+                <input type="text" id="sandbox-value" placeholder="Valor (ex: 3000)">
+            </div>
+        </div>
+        <button class="action-button" onclick="applySandboxRule()">Aplicar e Destacar</button>
+      </div>
+
+      <!-- Tela 4: Auditoria de Dose -->
+      <div id="modal-dose-audit-view" style="display:none;">
+        <button class="back-button" onclick="showScreen('modal-main-menu')">&larr; Voltar ao Menu</button>
+        <h4>Auditoria de Limite de Dose</h4>
+        <p>Identifique pacientes que excedem um limite de dose diária. Associe as colunas de seus dados e defina o limite para a verificação.</p>
+        <div class="tool-section">
+            <div style="margin-bottom: 20px;">
+                <label><input type="radio" name="audit_patient_type" value="adult" checked onchange="toggleDoseAudit()"> Adulto</label>
+                <label style="margin-left: 15px;"><input type="radio" name="audit_patient_type" value="child" onchange="toggleDoseAudit()"> Criança</label>
+            </div>
+            <div id="adult_audit_section">
+                <div class="form-group">
+                    <label for="adult-dose-column">Coluna de Dose (24h)</label>
+                    <select id="adult-dose-column"></select>
+                </div>
+                <div class="form-group">
+                    <label for="adult-dose-limit">Limite Máximo Diário (mg)</label>
+                    <input type="number" id="adult-dose-limit" placeholder="Ex: 3000">
+                </div>
+            </div>
+            <div id="child_audit_section" style="display: none;">
+                 <div class="form-group">
+                    <label for="child-dose-column">Coluna de Dose (24h)</label>
+                    <select id="child-dose-column"></select>
+                </div>
+                <div class="form-group">
+                    <label for="child-weight-column">Coluna de Peso (kg)</label>
+                    <select id="child-weight-column"></select>
+                </div>
+                <div class="form-group">
+                    <label for="child-dose-limit-per-kg">Limite Máximo (mg/kg/dia)</label>
+                    <input type="number" id="child-dose-limit-per-kg" placeholder="Ex: 60">
+                </div>
+            </div>
+        </div>
+         <button class="action-button" onclick="applyDoseAudit()">Aplicar Auditoria</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const chartTemplates = {
+        'age_histogram': { name: 'Distribuição de Idade', config: { type: 'histogram', x: '_IDADE_ANOS' } },
+        'gender_pie': { name: 'Distribuição de Sexo', config: { type: 'pie', x: '_SEXO' } },
+        'drug_usage_bar': { name: 'Contagem por Fármaco', config: { type: 'bar', x: '_FARMACO' } },
+        'dose_by_age_boxplot': { name: 'Auditoria: Dose por Faixa Etária', config: { type: 'boxplot', x: '_FAIXA_ETARIA', y: '_DOSE' } }
+    };
+
+    function openAnalysisModal() {
+      document.getElementById('analise-rapida-modal').classList.add('open');
+      populateTemplateButtons();
+      populateSandboxColumns();
+      populateDoseAuditColumns();
+      showScreen('modal-main-menu');
+      // Adiciona uma faixa inicial no construtor para guiar o usuário
+      if (document.getElementById('age-range-container').childElementCount === 0) {
+        addAgeRangeRow();
+      }
+    }
+
+    function closeAnalysisModal() {
+      document.getElementById('analise-rapida-modal').classList.remove('open');
+    }
+
+    function showScreen(screenId) {
+        ['modal-main-menu', 'modal-template-list', 'modal-builder-view', 'modal-sandbox-view', 'modal-dose-audit-view'].forEach(id => {
+            document.getElementById(id).style.display = (id === screenId) ? 'block' : 'none';
+        });
+    }
+
+    function populateTemplateButtons() {
+        const container = document.getElementById('template-buttons-container');
+        container.innerHTML = '';
+        for (const id in chartTemplates) {
+            const button = document.createElement('button');
+            button.textContent = chartTemplates[id].name;
+            button.onclick = () => runTemplateDirectly(id); 
+            container.appendChild(button);
+        }
+    }
+    
+    function runTemplateDirectly(templateId) {
+        closeAnalysisModal();
+        const template = chartTemplates[templateId];
+        if (typeof injectAndSelect !== 'function' || typeof runAnalysis !== 'function') {
+            alert("Erro de integração: Funções da página principal não encontradas.");
+            return;
+        }
+        injectAndSelect('sel-type', template.config.type);
+        for (const axis in template.config) {
+            if (axis !== 'type') {
+                injectAndSelect(`sel-${axis}`, template.config[axis]);
+            }
+        }
+        setTimeout(runAnalysis, 100);
+    }
+
+    // --- Lógica para o Construtor de Histograma Manual ---
+    let rangeCounter = 0;
+    function addAgeRangeRow() {
+        rangeCounter++;
+        const container = document.getElementById('age-range-container');
+        const row = document.createElement('div');
+        row.className = 'input-row';
+        row.id = `range-row-${rangeCounter}`;
+        row.innerHTML = `
+            <input type="number" placeholder="Idade Mín." id="range-min-${rangeCounter}">
+            <input type="number" placeholder="Idade Máx." id="range-max-${rangeCounter}">
+            <input type="text" placeholder="Nome da Faixa (ex: Crianças)" id="range-label-${rangeCounter}">
+            <button class="remove-row-btn" onclick="document.getElementById('range-row-${rangeCounter}').remove()">&times;</button>
+        `;
+        container.appendChild(row);
+    }
+
+    function generateCustomHistogram() {
+        const ranges = [];
+        const rows = document.getElementById('age-range-container').getElementsByClassName('input-row');
+        for (let row of rows) {
+            const id = row.id.split('-')[2];
+            const min = document.getElementById(`range-min-${id}`).value;
+            const max = document.getElementById(`range-max-${id}`).value;
+            const label = document.getElementById(`range-label-${id}`).value;
+            if (label && min !== '' && max !== '') {
+                ranges.push({ min: parseInt(min), max: parseInt(max), label: label });
+            }
+        }
+
+        if (ranges.length === 0) {
+            alert("Por favor, defina ao menos uma faixa etária com nome, idade mínima e máxima.");
+            return;
+        }
+        
+        closeAnalysisModal();
+        
+        if (typeof runAnalysisWithCustomRanges === 'function') {
+            runAnalysisWithCustomRanges(ranges);
+        } else {
+            alert("Integração falhou: A função 'runAnalysisWithCustomRanges' não foi encontrada.");
+        }
+    }
+
+    // --- Lógica para o Sandbox de Regras ---
+    function populateSandboxColumns() {
+        const select = document.getElementById('sandbox-column');
+        select.innerHTML = '';
+        if (typeof getAvailableColumns === 'function') {
+            const allCols = new Set([...getAvailableColumns(), '_IDADE_ANOS', '_DOSE', '_DOSE_24HS']);
+            allCols.forEach(col => {
+                select.innerHTML += `<option value="${col}">${col}</option>`;
+            });
+        } else {
+             select.innerHTML = '<option value="">-- ERRO --</option>';
+        }
+    }
+
+    function applySandboxRule() {
+        const rule = {
+            column: document.getElementById('sandbox-column').value,
+            operator: document.getElementById('sandbox-operator').value,
+            value: document.getElementById('sandbox-value').value
+        };
+
+        if (!rule.column || !rule.value) {
+            alert("Por favor, preencha a coluna e o valor para aplicar a regra.");
+            return;
+        }
+
+        closeAnalysisModal();
+        if (typeof highlightDataWithRule === 'function') {
+            highlightDataWithRule(rule);
+        } else {
+            alert("Integração necessária: A função 'highlightDataWithRule' não foi encontrada.");
+        }
+    }
+
+    // --- Lógica para a Auditoria de Dose ---
+    function populateDoseAuditColumns() {
+        const selects = [
+            document.getElementById('adult-dose-column'),
+            document.getElementById('child-dose-column'),
+            document.getElementById('child-weight-column')
+        ];
+        if (typeof getAvailableColumns !== 'function') {
+             selects.forEach(s => s.innerHTML = '<option value="">-- ERRO --</option>');
+             return;
+        }
+        const allCols = [...getAvailableColumns(), '_DOSE_24HS', '_PESO'];
+        const options = allCols.map(c => `<option value="${c}">${c}</option>`).join('');
+        selects.forEach(s => s.innerHTML = options);
+    }
+
+    function toggleDoseAudit() {
+        const patientType = document.querySelector('input[name="audit_patient_type"]:checked').value;
+        document.getElementById('adult_audit_section').style.display = (patientType === 'adult') ? 'block' : 'none';
+        document.getElementById('child_audit_section').style.display = (patientType === 'child') ? 'block' : 'none';
+    }
+
+    function applyDoseAudit() {
+        const type = document.querySelector('input[name="audit_patient_type"]:checked').value;
+        let auditConfig = { type };
+
+        if (type === 'adult') {
+            auditConfig.doseColumn = document.getElementById('adult-dose-column').value;
+            auditConfig.limit = document.getElementById('adult-dose-limit').value;
+            if (!auditConfig.doseColumn || !auditConfig.limit) {
+                return alert('Para auditoria em adultos, selecione a coluna de dose e defina um limite.');
+            }
+            auditConfig.limit = parseFloat(auditConfig.limit);
+        } else {
+            auditConfig.doseColumn = document.getElementById('child-dose-column').value;
+            auditConfig.weightColumn = document.getElementById('child-weight-column').value;
+            auditConfig.limitPerKg = document.getElementById('child-dose-limit-per-kg').value;
+            if (!auditConfig.doseColumn || !auditConfig.weightColumn || !auditConfig.limitPerKg) {
+                return alert('Para auditoria em crianças, selecione as colunas de dose, peso e defina um limite mg/kg.');
+            }
+             auditConfig.limitPerKg = parseFloat(auditConfig.limitPerKg);
+        }
+
+        closeAnalysisModal();
+
+        if (typeof runDoseAudit === 'function') {
+            runDoseAudit(auditConfig);
+        } else {
+            alert("Integração necessária: A função 'runDoseAudit' não foi encontrada na página principal.");
+            console.log("Configuração de Auditoria de Dose:", auditConfig);
+        }
+    }
+
+  </script>
+</body>
+</html>
