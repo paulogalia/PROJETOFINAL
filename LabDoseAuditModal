@@ -1,0 +1,134 @@
+<style>
+.dose-audit-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px;
+    max-width: 90%;
+    max-height: 80vh;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    z-index: 4000;
+    display: none;
+    flex-direction: column;
+    font-family: 'Inter', sans-serif;
+}
+.dose-audit-modal[open] {
+    display: flex;
+}
+.dose-audit-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 3999;
+    display: none;
+}
+.dose-audit-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.dose-audit-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+.dose-audit-body {
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+.dose-audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+.dose-audit-table th {
+    background: #f8fafc;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #475569;
+    position: sticky;
+    top: 0;
+}
+.dose-audit-table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+}
+.dose-audit-footer {
+    padding: 15px;
+    text-align: right;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+</style>
+
+<div class="dose-audit-overlay" id="dose-audit-overlay"></div>
+<dialog id="dose-audit-modal" class="dose-audit-modal">
+    <div class="dose-audit-header">
+        <h3 id="dose-audit-title" class="dose-audit-title">Auditoria de Doses</h3>
+        <button onclick="closeDoseAudit()" style="border:none; background:none; font-size:1.5rem; cursor:pointer; color:#94a3b8;">&times;</button>
+    </div>
+    <div class="dose-audit-body">
+        <p id="dose-audit-empty-msg" style="text-align:center; padding: 20px; color: #64748b;">Nenhum problema de dose encontrado.</p>
+        <table id="dose-audit-table" class="dose-audit-table">
+            <thead>
+                <tr>
+                    <th>Paciente</th>
+                    <th>Medicamento</th>
+                    <th>Dose</th>
+                    <th>Motivo</th>
+                </tr>
+            </thead>
+            <tbody id="dose-audit-table-body">
+            </tbody>
+        </table>
+    </div>
+    <div class="dose-audit-footer">
+        <button onclick="closeDoseAudit()" style="padding:8px 16px; border-radius:6px; border:1px solid #cbd5e1; background:white; cursor:pointer;">Fechar</button>
+    </div>
+</dialog>
+
+<script>
+function openDoseAudit(problemas) {
+    const modal = document.getElementById('dose-audit-modal');
+    const overlay = document.getElementById('dose-audit-overlay');
+    const table = document.getElementById('dose-audit-table');
+    const emptyMsg = document.getElementById('dose-audit-empty-msg');
+    const tbody = document.getElementById('dose-audit-table-body');
+
+    tbody.innerHTML = '';
+
+    if (problemas && problemas.length > 0) {
+        table.style.display = 'table';
+        emptyMsg.style.display = 'none';
+        problemas.forEach(p => {
+            const row = `<tr>
+                <td>${p.paciente}</td>
+                <td>${p.medicamento}</td>
+                <td>${p.dose}</td>
+                <td>${p.motivo}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    } else {
+        table.style.display = 'none';
+        emptyMsg.style.display = 'block';
+    }
+
+    modal.setAttribute('open', '');
+    overlay.style.display = 'block';
+}
+
+function closeDoseAudit() {
+    document.getElementById('dose-audit-modal').removeAttribute('open');
+    document.getElementById('dose-audit-overlay').style.display = 'none';
+}
+</script>
