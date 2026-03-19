@@ -1,166 +1,253 @@
 <style>
-  /* Layout Específico */
-  .farm-container { display: grid; grid-template-columns: 300px 1fr; height: 100%; font-family: 'Inter', sans-serif; }
-  .farm-sidebar { background: #fff; border-right: 1px solid #e2e8f0; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-  .farm-main { background: #f8fafc; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+  /* --- LAYOUT & FONTES --- */
+  .fv-container { display: grid; grid-template-columns: 320px 1fr; height: 100%; font-family: 'Inter', sans-serif; }
+  .fv-sidebar { background: #fff; border-right: 1px solid #e2e8f0; padding: 20px; display: flex; flex-direction: column; gap: 25px; overflow-y: auto; }
+  .fv-main { background: #f8fafc; padding: 20px; display: flex; flex-direction: column; }
 
-  /* Cartão de Paciente */
-  .patient-card { background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 12px; display:none; }
-  .patient-id { font-size: 1.2rem; font-weight: 800; color: #1e3a8a; display: block; margin-bottom: 5px; }
-  .patient-info { font-size: 0.85rem; color: #60a5fa; }
+  /* --- CABEÇALHO DA SIDEBAR --- */
+  .fv-header { font-size: 1.2rem; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 20px; }
+  .fv-header .material-icons-round { color: #7c3aed; }
 
-  /* Controles */
-  .control-group { border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; }
-  .control-title { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px; display: block; }
-  .form-input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
-  
-  .tag-select { display: flex; flex-wrap: wrap; gap: 5px; }
-  .tag-option { 
-    background: #fff; border: 1px solid #cbd5e1; padding: 5px 10px; 
-    border-radius: 20px; font-size: 0.8rem; cursor: pointer; color: #64748b; transition: 0.2s; 
-  }
-  .tag-option.active { background: #2563eb; color: white; border-color: #2563eb; }
-  
-  .timeline-box { background: white; border-radius: 16px; border: 1px solid #e2e8f0; flex-grow: 1; position: relative; padding: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-  
-  .btn-investigate { width: 100%; padding: 12px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3); transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-  .btn-investigate:hover { transform: translateY(-2px); }
+  /* --- GRUPOS DE CONTROLE --- */
+  .control-group { display: flex; flex-direction: column; gap: 8px; }
+  .control-label { font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+  .input-wrapper { display: flex; }
+  .form-input { flex-grow: 1; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px 0 0 8px; font-size: 1rem; outline: none; transition: border-color 0.2s; }
+  .form-input:focus { border-color: #7c3aed; }
+  .btn-go { padding: 0 15px; border: none; background: #7c3aed; color: white; border-radius: 0 8px 8px 0; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+  /* --- DOSSIÊ DO PACIENTE (CARTÃO DE PERFIL) --- */
+  #patient-dossier { display: none; /* Oculto por padrão */ flex-direction: column; gap: 15px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 20px -5px rgba(124, 58, 237, 0.3); margin-top: 10px; }
+  #dossier-id { font-size: 1.5rem; font-weight: 800; }
+  .dossier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dossier-item { background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; }
+  .dossier-label { font-size: 0.7rem; text-transform: uppercase; opacity: 0.7; }
+  .dossier-value { font-size: 0.9rem; font-weight: 600; }
+
+  /* --- SELETOR DE EXAMES (TAGS) --- */
+  .tag-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag-btn { background: #f1f5f9; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; color: #475569; transition: all 0.2s; }
+  .tag-btn.active { background: #1e293b; color: white; border-color: #1e293b; font-weight: 600; }
+  .tag-btn:hover:not(.active) { background: #e2e8f0; }
+
+  /* --- ÁREA PRINCIPAL E GRÁFICO --- */
+  .timeline-wrapper { flex-grow: 1; background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; position: relative; }
+  #timeline-chart { width: 100%; height: 100%; }
+
+  /* ESTADOS DO GRÁFICO (Inicial, Carregando, Erro) */
+  .chart-state-overlay { position: absolute; top:0; left:0; right:0; bottom:0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #94a3b8; z-index: 10; }
+  .chart-state-overlay .material-icons-round { font-size: 3rem; margin-bottom: 10px; opacity: 0.5; }
+  .spinner { width: 32px; height: 32px; border: 4px solid #e2e8f0; border-top-color: #7c3aed; border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
 </style>
 
-<div class="farm-container">
-  
-  <aside class="farm-sidebar">
-    <div style="font-size:1.1rem; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:8px;">
-      <span class="material-icons-round" style="color:#7c3aed">local_pharmacy</span> Investigador
+<div class="fv-container">
+
+  <aside class="fv-sidebar">
+    <div class="fv-header">
+      <span class="material-icons-round">science</span>
+      <span>Painel de Investigação</span>
     </div>
 
     <div class="control-group">
-      <label class="control-title">Paciente Alvo (Prontuário)</label>
-      <input type="text" id="farm-pid" class="form-input" placeholder="Ex: 15122195">
-    </div>
-
-    <div class="control-group">
-      <label class="control-title">Marcadores (Exames)</label>
-      <div class="tag-select" id="list-labs">
-        <div class="tag-option active" data-type="Creatinina" onclick="toggleTag(this)">Creatinina</div>
-        <div class="tag-option" data-type="Leucócitos" onclick="toggleTag(this)">Leucócitos</div>
-        <div class="tag-option" data-type="AST/TGO" onclick="toggleTag(this)">AST (TGO)</div>
+      <label class="control-label">ID do Paciente (Prontuário)</label>
+      <div class="input-wrapper">
+        <input type="text" id="fv-pid-input" class="form-input" placeholder="Digite o ID aqui...">
+        <button class="btn-go" onclick="runPatientInvestigation()" title="Gerar Timeline do Paciente">
+          <span class="material-icons-round">arrow_forward</span>
+        </button>
       </div>
     </div>
 
-    <div style="flex-grow:1"></div>
-    <button class="btn-investigate" onclick="runInvestigation()">
-      <span class="material-icons-round">search</span> GERAR TIMELINE
-    </button>
-  </aside>
-
-  <main class="farm-main">
-    <div class="patient-card" id="farm-card">
-      <span class="patient-id" id="card-pid">---</span>
-      <span class="patient-info" id="card-info">Dados reais carregados do sistema.</span>
+    <!-- Dossiê do Paciente (será preenchido via JS) -->
+    <div id="patient-dossier">
+      <span id="dossier-id"></span>
+      <div class="dossier-grid">
+        <div class="dossier-item"><div class="dossier-label">Idade</div><div id="dossier-age" class="dossier-value">-</div></div>
+        <div class="dossier-item"><div class="dossier-label">Sexo</div><div id="dossier-sex" class="dossier-value">-</div></div>
+        <div class="dossier-item"><div class="dossier-label">Primeiro Evento</div><div id="dossier-first-date" class="dossier-value">-</div></div>
+        <div class="dossier-item"><div class="dossier-label">Último Evento</div><div id="dossier-last-date" class="dossier-value">-</div></div>
+      </div>
     </div>
 
-    <div class="timeline-box">
-      <div id="farm-chart" style="width:100%; height:100%;">
-        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#94a3b8;">
-          <span class="material-icons-round" style="font-size:3rem; margin-bottom:10px; opacity:0.3;">timeline</span>
-          Insira um Prontuário para ver a história.
-        </div>
+    <div class="control-group">
+      <label class="control-label">Visualizar Exames</label>
+      <div class="tag-grid" id="fv-lab-tags">
+        <div class="tag-btn active" data-type="Creatinina" onclick="toggleLabTag(this)">Creatinina</div>
+        <div class="tag-btn active" data-type="Leucócitos" onclick="toggleLabTag(this)">Leucócitos</div>
+        <div class="tag-btn" data-type="Plaquetas" onclick="toggleLabTag(this)">Plaquetas</div>
+        <div class="tag-btn active" data-type="AST/TGO" onclick="toggleLabTag(this)">AST/TGO</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <main class="fv-main">
+    <div class="timeline-wrapper">
+      <div id="timeline-chart"></div>
+      <!-- Overlay de Estados -->
+      <div id="chart-overlay" class="chart-state-overlay">
+        <span class="material-icons-round">timeline</span>
+        <h3>Linha do Tempo Clínica</h3>
+        <p>Insira o ID de um paciente para começar a investigação.</p>
       </div>
     </div>
   </main>
+
 </div>
 
 <script>
-  let currentData = null; // Guarda dados carregados
+  // Guarda os dados do paciente carregado para evitar novas buscas
+  let loadedPatientData = null;
 
-  function toggleTag(el) {
-    el.classList.toggle('active');
-    if(currentData) updateChart(); // Atualiza gráfico se já houver dados
+  // Adiciona listener para a tecla Enter no input
+  document.getElementById('fv-pid-input').addEventListener('keyup', function(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      runPatientInvestigation();
+    }
+  });
+
+  // Função para ligar/desligar um exame e redesenhar o gráfico
+  function toggleLabTag(element) {
+    element.classList.toggle('active');
+    if (loadedPatientData) {
+      drawTimelineChart(); // Apenas redesenha se já houver dados
+    }
   }
 
-  function runInvestigation() {
-    const pid = document.getElementById('farm-pid').value;
-    if(!pid) return alert("Digite um número de Prontuário.");
-    
-    if(window.showLoading) window.showLoading(true);
+  // Função principal para iniciar a busca de um paciente
+  function runPatientInvestigation() {
+    const patientId = document.getElementById('fv-pid-input').value.trim();
+    if (!patientId) {
+      setChartState('error', 'ID do Paciente em branco', 'Por favor, insira um número de prontuário para continuar.');
+      return;
+    }
 
-    google.script.run.withSuccessHandler(res => {
-      if(window.showLoading) window.showLoading(false);
-      
-      if(!res.sucesso) return alert(res.erro);
-      if(res.data.meds.length === 0 && res.data.exams.length === 0) return alert("Nenhum dado encontrado para este paciente.");
+    setChartState('loading');
 
-      currentData = res.data;
-      
-      // Atualiza Info
-      document.getElementById('farm-card').style.display = 'block';
-      document.getElementById('card-pid').innerText = `Paciente: ${pid}`;
-      
-      updateChart();
-
-    }).apiGetPatientTimeline(pid);
+    google.script.run
+      .withSuccessHandler(onDataSuccess)
+      .withFailureHandler(onDataError)
+      .apiGetPatientTimeline(patientId);
   }
 
-  function updateChart() {
-    if(!currentData) return;
+  // Callback para quando os dados chegam com sucesso do servidor
+  function onDataSuccess(response) {
+    if (!response.sucesso) {
+      setChartState('error', 'Erro ao Buscar Paciente', response.erro);
+      document.getElementById('patient-dossier').style.display = 'none';
+      return;
+    }
 
+    if (response.data.meds.length === 0 && response.data.exams.length === 0) {
+      setChartState('empty', 'Nenhum Dado Encontrado', 'Não há registros de medicamentos ou exames para este paciente no período.');
+      updateDossier(response.patientInfo, 0, 0);
+      return;
+    }
+
+    loadedPatientData = response;
+    updateDossier(response.patientInfo, response.data.meds.length, response.data.exams.length);
+    drawTimelineChart();
+  }
+
+  // Callback para falhas de comunicação com o servidor
+  function onDataError(error) {
+    setChartState('error', 'Erro de Comunicação', error.message);
+    document.getElementById('patient-dossier').style.display = 'none';
+  }
+
+  // Preenche o cartão "Dossiê do Paciente" com os dados demográficos
+  function updateDossier(info, medCount, examCount) {
+    document.getElementById('dossier-id').innerText = `ID: ${info.id}`;
+    document.getElementById('dossier-age').innerText = info.age ? `${info.age} anos` : 'N/D';
+    document.getElementById('dossier-sex').innerText = info.sex || 'N/D';
+    document.getElementById('dossier-first-date').innerText = info.firstEventDate ? new Date(info.firstEventDate).toLocaleDateString() : '-';
+    document.getElementById('dossier-last-date').innerText = info.lastEventDate ? new Date(info.lastEventDate).toLocaleDateString() : '-';
+    document.getElementById('patient-dossier').style.display = 'flex';
+  }
+
+  // Função central para desenhar o gráfico com os dados carregados
+  function drawTimelineChart() {
+    if (!loadedPatientData) return;
+
+    setChartState('clear'); // Limpa o overlay (loading/erro)
+    const timelineData = loadedPatientData.data;
     const traces = [];
     
-    // 1. Trace de Medicamento (Barra)
-    // Agrupa doses por dia (soma)
-    const medMap = {};
-    currentData.meds.forEach(m => {
-      if(!medMap[m.date]) medMap[m.date] = 0;
-      medMap[m.date] += m.dose;
-    });
-    
-    traces.push({
-      x: Object.keys(medMap).sort(),
-      y: Object.values(medMap),
-      name: 'Dose (mg)',
-      type: 'bar',
-      marker: { color: '#8b5cf6', opacity: 0.5 },
-      yaxis: 'y1'
-    });
+    // === Trace 1: Medicamentos (Barras de Evento) ===
+    if (timelineData.meds.length > 0) {
+      const medTrace = {
+        x: timelineData.meds.map(d => d.date),
+        y: timelineData.meds.map(d => 1), // Altura fixa para ser um marcador
+        text: timelineData.meds.map(d => `${d.name} (${d.dose} mg)`), // Texto para o hover
+        name: 'Medicamentos',
+        type: 'bar',
+        marker: { color: '#8b5cf6', opacity: 0.6 },
+        yaxis: 'y1',
+        hoverinfo: 'x+text'
+      };
+      traces.push(medTrace);
+    }
 
-    // 2. Traces de Exames (Linhas)
-    // Verifica quais tags estão ativas
-    const activeTags = Array.from(document.querySelectorAll('#list-labs .active')).map(el => el.dataset.type);
+    // === Trace 2: Exames Laboratoriais (Linhas) ===
+    const activeLabTags = Array.from(document.querySelectorAll('#fv-lab-tags .tag-btn.active')).map(el => el.dataset.type);
+    const examColors = {'Creatinina': '#ef4444', 'Leucócitos': '#10b981', 'Plaquetas': '#f59e0b', 'AST/TGO': '#3b82f6'};
     
-    // Agrupa exames por tipo
-    const examsByType = {};
-    currentData.exams.forEach(e => {
-      if(activeTags.includes(e.type)) {
-        if(!examsByType[e.type]) examsByType[e.type] = { x: [], y: [] };
-        examsByType[e.type].x.push(e.date);
-        examsByType[e.type].y.push(e.value);
+    activeLabTags.forEach(labType => {
+      const examPoints = timelineData.exams.filter(e => e.type === labType);
+      if (examPoints.length > 0) {
+        traces.push({
+          x: examPoints.map(p => p.date),
+          y: examPoints.map(p => p.value),
+          name: labType,
+          type: 'scatter',
+          mode: 'lines+markers',
+          line: { color: examColors[labType] || '#333', width: 3 },
+          marker: { size: 8 },
+          yaxis: 'y2'
+        });
       }
     });
 
-    const colors = {'Creatinina': '#ef4444', 'Leucócitos': '#10b981', 'AST/TGO': '#f59e0b'};
-
-    Object.keys(examsByType).forEach(type => {
-      traces.push({
-        x: examsByType[type].x,
-        y: examsByType[type].y,
-        name: type,
-        type: 'scatter',
-        mode: 'lines+markers',
-        line: { color: colors[type] || '#333', width: 3 },
-        yaxis: 'y2'
-      });
-    });
-
     const layout = {
-      title: 'Timeline Clínica',
-      xaxis: { title: 'Data', type: 'date' },
-      yaxis: { title: 'Dose (mg)', side: 'left', showgrid: false },
-      yaxis2: { title: 'Valor Laboratorial', overlaying: 'y', side: 'right', showgrid: true },
-      legend: { orientation: 'h', y: 1.1 },
-      margin: { r: 50, l: 50, t: 50, b: 50 }
+      title: `Linha do Tempo Clínica do Paciente: ${loadedPatientData.patientInfo.id}`,
+      xaxis: { type: 'date', title: 'Data do Evento', gridcolor: '#f1f5f9' },
+      yaxis: { showticklabels: false, showgrid: false, range: [0, 1.5] },
+      yaxis2: { title: 'Valor Laboratorial', overlaying: 'y', side: 'right' },
+      legend: { orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center' },
+      margin: { t: 50, b: 100, l: 40, r: 50 },
+      hovermode: 'x unified'
     };
 
-    Plotly.newPlot('farm-chart', traces, layout, {responsive:true});
+    Plotly.newPlot('timeline-chart', traces, layout, { responsive: true });
   }
+
+  // Gerencia as mensagens e ícones na área do gráfico
+  function setChartState(state, title, message) {
+    const overlay = document.getElementById('chart-overlay');
+    Plotly.purge('timeline-chart'); // Limpa qualquer gráfico anterior
+    
+    let content = '';
+    switch (state) {
+      case 'loading':
+        content = '<div class="spinner"></div><h3>Buscando dados...</h3><p>Aguarde um momento.</p>';
+        break;
+      case 'error':
+        content = `<span class="material-icons-round" style="color:#ef4444">error</span><h3>${title}</h3><p>${message}</p>`;
+        break;
+      case 'empty':
+        content = `<span class="material-icons-round">inbox</span><h3>${title}</h3><p>${message}</p>`;
+        break;
+      case 'initial':
+        content = '<span class="material-icons-round">timeline</span><h3>Linha do Tempo Clínica</h3><p>Insira o ID de um paciente para começar a investigação.</p>';
+        break;
+      case 'clear':
+        overlay.innerHTML = '';
+        return;
+    }
+    overlay.innerHTML = content;
+  }
+
 </script>
