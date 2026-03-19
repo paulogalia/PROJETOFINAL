@@ -157,7 +157,6 @@ gap: 15px;
 <span class="material-icons-round">play_arrow</span> ATUALIZAR
 </button>
 
-<!-- NOVO: Botão de Ajuste do Modelo -->
 <div id="adjust-template-container" style="display: none; margin-top: 10px;">
 <button class="btn-stack" onclick="openAdjustTemplateScreen()" style="width:100%; background:#fffbe6; color:#b45309; border-color:#fde68a;">
     <span class="material-icons-round">edit</span> Ajustar Modelo
@@ -212,7 +211,8 @@ gap: 15px;
     Excel Geral
   </button>
 
-  <button id="btn-dose-audit" onclick="openDoseAuditConfig()" style="background:#fff; border:1px solid #cbd5e1; color:#334155; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px; font-size:0.8rem; box-shadow:0 1px 2px rgba(0,0,0,0.05); white-space:nowrap;">
+  <!-- ✅ CORRIGIDO: chama openDoseModal() do novo LabRegrasDose -->
+  <button id="btn-dose-audit" onclick="openDoseModal()" style="background:#fff; border:1px solid #cbd5e1; color:#334155; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px; font-size:0.8rem; box-shadow:0 1px 2px rgba(0,0,0,0.05); white-space:nowrap;">
       <span class="material-icons-round" style="font-size:16px; color:#ef4444;">error_outline</span>
       Auditoria de Dose
   </button>
@@ -293,9 +293,9 @@ gap: 15px;
 
 </div>
 
-<?!= include('LabAnaliseRapidaModal.html'); ?>
-<?!= include('LabDoseAuditModal.html'); ?>
-<?!= include('LabDoseAuditConfigModal.html'); ?>
+<?!= include('LabAnaliseRapidaModal'); ?>
+<?!= include('LabDoseAuditModal'); ?>
+<?!= include('LabRegrasDose'); ?>
 
 <script>
 let globalChartData = []; 
@@ -309,27 +309,11 @@ let availableColumns = [];
 let lastUsedTemplateId = null; 
 window.latestChartConfig = {}; 
 
-function openDoseAuditConfig() {
-    const modal = document.getElementById('dose-audit-config-modal');
-    const overlay = document.getElementById('dose-audit-config-overlay');
-    const select = document.getElementById('sel-audit-med');
-
-    if (globalChartData && globalChartData.length > 0) {
-        const meds = [...new Set(globalChartData.map(item => item.MEDICAMENTO))].filter(Boolean);
-        select.innerHTML = meds.map(med => `<option value="${med}">${med}</option>`).join('');
-    } else {
-        select.innerHTML = '<option>Nenhum medicamento carregado</option>';
-    }
-
-    modal.setAttribute('open', '');
-    overlay.style.display = 'block';
-}
-
-function closeDoseAuditConfig() {
-    document.getElementById('dose-audit-config-modal').removeAttribute('open');
-    document.getElementById('dose-audit-config-overlay').style.display = 'none';
-}
-
+// ================================================================
+// REMOVIDO: openDoseAuditConfig() e closeDoseAuditConfig()
+// O botão "Auditoria de Dose" agora chama openDoseModal()
+// definida em LabRegrasDose (incluído acima).
+// ================================================================
 
 function setLastUsedTemplate(templateId) {
 lastUsedTemplateId = templateId;
@@ -624,7 +608,7 @@ var formulaBody = ranges
             return null;
         }
         
-        var label = String(r.label || 'Sem Rótulo').replace(/'/g, "\'");
+        var label = String(r.label || 'Sem Rótulo').replace(/'/g, "\\'");
         return `if (age >= ${min} && age <= ${max}) return '${label}';`;
     })
     .filter(Boolean)
