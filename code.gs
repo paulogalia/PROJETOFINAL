@@ -928,3 +928,177 @@ function apiGetSlidesUrl() {
     presentationId: presId
   };
 }
+
+// ============================================================
+// ADICIONAR AO code.gs — função utilitária apiGetUniqueValues
+// Usada por LabEficacia, LabRegrasDose (fallback) e outros módulos.
+// Retorna array de strings únicas e não-vazias de uma coluna.
+// ============================================================
+
+/**
+ * Retorna os valores únicos de uma coluna específica de uma aba.
+ * Ignora a linha de cabeçalho, células vazias e valores idênticos ao header.
+ *
+ * @param {string} sheetName  - Nome da aba na planilha ativa.
+ * @param {string} colName    - Nome da coluna (case-insensitive).
+ * @returns {string[]}        - Array ordenado de valores únicos.
+ */
+function apiGetUniqueValues(sheetName, colName) {
+  try {
+    const ss    = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(sheetName);
+
+    if (!sheet) {
+      console.warn('apiGetUniqueValues: aba não encontrada — ' + sheetName);
+      return [];
+    }
+
+    const data    = sheet.getDataRange().getValues();
+    if (data.length < 2) return []; // só cabeçalho ou vazio
+
+    // Encontra índice da coluna (case-insensitive)
+    const headers = data[0].map(function(h) { return String(h).toUpperCase().trim(); });
+    const colIdx  = headers.indexOf(colName.toUpperCase().trim());
+
+    if (colIdx === -1) {
+      console.warn('apiGetUniqueValues: coluna não encontrada — ' + colName + ' em ' + sheetName);
+      return [];
+    }
+
+    const seen = {};
+    const result = [];
+
+    for (var i = 1; i < data.length; i++) {
+      var raw = data[i][colIdx];
+      if (raw === null || raw === undefined) continue;
+
+      var val = String(raw).trim();
+
+      // Descarta vazios e valores iguais ao nome da coluna (header acidental)
+      if (val === '' || val.toUpperCase() === colName.toUpperCase().trim()) continue;
+
+      if (!seen[val]) {
+        seen[val] = true;
+        result.push(val);
+      }
+    }
+
+    return result.sort(function(a, b) {
+      return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
+    });
+
+  } catch (e) {
+    console.error('apiGetUniqueValues erro: ' + e.message);
+    return [];
+  }
+}
+
+// ============================================================
+// ADICIONAR AO code.gs — função dedicada para auditoria de dose
+// Não possui o diagnóstico de idxNasc que bloqueia apiGetRawExplorerData
+// ============================================================
+
+/**
+ * Busca os dados brutos de uma aba para auditoria de dose.
+ * Diferente de apiGetRawExplorerData, NÃO bloqueia execução
+ * se a coluna de nascimento não for encontrada pelo auto-detect.
+ * 
+ * @param {object} cfg
+ *   cfg.sheet    {string} - Nome da aba
+ *   cfg.cols     {Array}  - Colunas a retornar
+ *   cfg.colNasc  {string} - Coluna de nascimento (nome exato, opcional)
+ *   cfg.colMed   {string} - Coluna de medicamento
+ *   cfg.medSel   {string} - Valor do medicamento a filtrar (opcional, '' = todos)
+ */
+function apiGetAuditData(cfg) {
+  try {
+    var ss     = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet  = ss.getSheetByName(cfg.sheet);
+    if (!sheet) return { sucesso: false, erro: 'Aba "' + cfg.sheet + '" não encontrada.' };
+
+    var data    = sheet.getDataRange().getValues();
+    if (data.length < 2) return { sucesso: true, dados: [] };
+
+    var headers = data[0].map(function(h) { return String(h).toUpperCase().trim(); });
+    var colMap  = {};
+    headers.forEach(function(h, i) { colMap[h] = i; });
+
+    // Colunas solicitadas
+    var cols = (cfg.cols || []).map(function(c) { return String(c).toUpperCase().trim(); });
+
+    // Índice da coluna de nascimento (usa o que o usuário escolheu, não auto-detect)
+    var idxNasc = -1;
+    if (cfg.colNasc && String(cfg.colNasc).trim() !== '') {
+      idxNasc = colMap[String(cfg.colNasc).toUpperCase().trim()];
+      if (idxNasc === undefined) idxNasc = -1;
+    }
+    
+    // Fallback: tenta auto-detect se o usuário não especificou
+    if (idxNasc === -1) {
+      var nascPatterns = ['DT_NASCIMENTO','NASCIMENTO','DATA DE NASCIMENTO','DT NASC','DOB','DT_NASC','NASC','DATA_NASCIMENTO'];
+      for (var pi = 0; pi < headers.length; pi++) {
+        if (nascPatterns.indexOf(headers[pi]) !== -1) { idxNasc = pi; break; }
+      }
+    }
+
+    // Filtro de medicamento (opcional)
+    var medNorm = cfg.medSel ? String(cfg.medSel).trim().toUpperCase() : '';
+    var idxMed  = cfg.colMed ? (colMap[String(cfg.colMed).toUpperCase().trim()] !== undefined
+                                ? colMap[String(cfg.colMed).toUpperCase().trim()] : -1) : -1;
+
+    var result = [];
+    var today  = new Date();
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+
+      // Filtro de medicamento no servidor (mais eficiente para planilhas grandes)
+      if (medNorm && idxMed > -1) {
+        var rowMed = String(row[idxMed] || '').trim().toUpperCase();
+        if (rowMed !== medNorm) continue;
+      }
+
+      var rowObj = {};
+
+      // Preenche colunas solicitadas
+      cols.forEach(function(c) {
+        var idx = colMap[c];
+        if (idx !== undefined && idx > -1) {
+          var raw = row[idx];
+          // Converte datas do Sheets para string ISO
+          if (raw instanceof Date) {
+            rowObj[c] = raw.toISOString().split('T')[0];
+          } else if (typeof raw === 'number') {
+            rowObj[c] = raw;
+          } else {
+            var str = String(raw || '').trim();
+            var num = parseFloat(str.replace(',', '.'));
+            rowObj[c] = (str !== '' && !isNaN(num)) ? num : (str || null);
+          }
+        } else {
+          rowObj[c] = null;
+        }
+      });
+
+      // Calcula _IDADE_ANOS se coluna de nascimento disponível
+      if (idxNasc > -1 && row[idxNasc]) {
+        var dobRaw = row[idxNasc];
+        var dob    = (dobRaw instanceof Date) ? dobRaw : new Date(String(dobRaw));
+        if (!isNaN(dob.getTime())) {
+          rowObj['_IDADE_ANOS'] = parseFloat(((today - dob) / (365.25 * 86400000)).toFixed(2));
+        } else {
+          rowObj['_IDADE_ANOS'] = null;
+        }
+      } else {
+        rowObj['_IDADE_ANOS'] = null;
+      }
+
+      result.push(rowObj);
+    }
+
+    return { sucesso: true, dados: result, total: result.length };
+
+  } catch (e) {
+    return { sucesso: false, erro: 'apiGetAuditData: ' + e.message };
+  }
+}
