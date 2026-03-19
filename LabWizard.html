@@ -12,6 +12,36 @@
   .chk-wrapper { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; cursor: pointer; transition: 0.2s; }
   .chk-wrapper:hover { border-color: #2563eb; background: #fff; }
   .chk-wrapper input { width: 18px; height: 18px; accent-color: #2563eb; }
+
+  /* Campo TFG destacado */
+  .field-tfg-wrapper {
+    grid-column: 1 / -1; /* ocupa as duas colunas */
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .field-tfg-wrapper label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0284c7;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .field-tfg-wrapper label::before {
+    content: '🔬';
+    font-size: 13px;
+  }
+  .field-tfg-hint {
+    font-size: 0.72rem;
+    color: #0369a1;
+    margin-top: 4px;
+  }
 </style>
 
 <div class="wiz-container">
@@ -64,16 +94,19 @@
 
 <script>
   let wizFiles = { pdf: null, data: null, name: "" }, finalConfig = {};
+
   (function init() {
     google.script.run.withSuccessHandler(d => {
       const sel = document.getElementById('sel-sheets');
       sel.innerHTML = '<option value="">-- Selecione --</option>' + d.sheets.map(s=>`<option value="${s}">${s}</option>`).join('');
     }).apiGetInitialState();
   })();
+
   function toggleSource(m) {
     document.getElementById('src-upload-box').className = m==='upload'?'':'hidden';
     document.getElementById('src-sheet-box').className = m==='sheet'?'':'hidden';
   }
+
   function handleFile(type, input) {
     const f = input.files[0]; if(!f) return;
     document.getElementById('lbl-'+type).innerText = "✔ " + f.name;
@@ -82,6 +115,7 @@
     if(type==='pdf') { r.onload=e=>wizFiles.pdf=e.target.result.split(',')[1]; r.readAsDataURL(f); }
     else { wizFiles.name=f.name; r.onload=e=>wizFiles.data=e.target.result.trim().split('\n').map(r=>r.split(',').map(c=>c.replace(/"/g,'').trim())); r.readAsText(f); }
   }
+
   function runWizard() {
     if(!wizFiles.pdf) return alert("Falta o PDF.");
     const mode = document.querySelector('input[name="srcType"]:checked').value;
@@ -89,32 +123,123 @@
     if(mode==='upload' && !wizFiles.data) return alert("Falta o CSV.");
     if(mode==='sheet' && !sheet) return alert("Selecione a aba.");
     if(window.showLoading) window.showLoading(true);
+
     google.script.run.withSuccessHandler(res => {
       if(window.showLoading) window.showLoading(false);
       if(res.erro) return alert(res.erro);
+
       document.getElementById('wiz-step-1').classList.add('hidden');
       document.getElementById('wiz-step-2').classList.remove('hidden');
-      document.getElementById('ai-analysis-box').innerHTML = `<strong>${res.studyName}</strong><br><em>${res.studySummary}</em>`;
-      const fields = [{k:'colProntFatos',l:'ID Paciente'},{k:'colMed',l:'Medicamento'},{k:'colDtIni',l:'Data Ref.'}, {k:'colDose24h',l:'Dose Diária'},{k:'colCreat',l:'Creatinina'},{k:'colSexo',l:'Sexo'}];
-      const grid = document.getElementById('grid-mapping'); grid.innerHTML = '';
-      fields.forEach(f => { const val = res.mapping[f.k] || ''; grid.innerHTML += `<div><label style="display:block;font-size:0.75rem;font-weight:700;color:#64748b;margin-bottom:4px;">${f.l}</label><input type="text" name="${f.k}" value="${val}" class="form-input" style="border-color:${val?'#10b981':'#e2e8f0'}"></div>`; });
-      finalConfig = { core: { abaFatos: res.createdSheet }, studySummary: res.studySummary };
+      document.getElementById('ai-analysis-box').innerHTML =
+        `<strong>${res.studyName}</strong><br><em>${res.studySummary}</em>`;
+
+      // ----------------------------------------------------------------
+      // CAMPOS DE MAPEAMENTO
+      // colTfg foi adicionado para suporte ao módulo de Auditoria Renal.
+      // O backend (apiMagicSetup) detecta automaticamente a coluna TFG
+      // quando o cabeçalho contém: 'TFG', 'CKD', 'CREAT' ou 'FILTRAC'.
+      // ----------------------------------------------------------------
+      const fields = [
+        { k: 'colProntFatos', l: 'ID Paciente'   },
+        { k: 'colMed',        l: 'Medicamento'   },
+        { k: 'colDtIni',      l: 'Data Ref.'     },
+        { k: 'colDose24h',    l: 'Dose Diária'   },
+        { k: 'colCreat',      l: 'Creatinina'    },
+        { k: 'colSexo',       l: 'Sexo'          },
+        // ── NOVO ──────────────────────────────────────────────────────
+        // Campo dedicado à TFG para integração com o LabAuditoriaRim.
+        // Detectado automaticamente quando o header contém:
+        //   'TFG' | 'CKD' | 'CREAT' (equação) | 'FILTRAC'
+        { k: 'colTfg', l: 'TFG / CKD-EPI', _isTfg: true }
+        // ──────────────────────────────────────────────────────────────
+      ];
+
+      const grid = document.getElementById('grid-mapping');
+      grid.innerHTML = '';
+
+      fields.forEach(f => {
+        const val = res.mapping[f.k] || '';
+
+        if (f._isTfg) {
+          // Campo TFG recebe layout especial de largura total + dica visual
+          const wrapper = document.createElement('div');
+          wrapper.className = 'field-tfg-wrapper';
+          wrapper.innerHTML = `
+            <label for="field-${f.k}">TFG / CKD-EPI — Função Renal</label>
+            <input
+              type="text"
+              id="field-${f.k}"
+              name="${f.k}"
+              value="${val}"
+              class="form-input"
+              placeholder="Ex: CREAT_EQUACAO_CKD_EPI"
+              style="border-color:${val ? '#0ea5e9' : '#cbd5e1'}">
+            <span class="field-tfg-hint">
+              Usado pelo módulo Auditoria Renal (TFG × Medicação).
+              Detectado automaticamente em cabeçalhos com TFG, CKD, CREAT ou FILTRAC.
+            </span>`;
+          grid.appendChild(wrapper);
+        } else {
+          // Campos padrão (layout original de 2 colunas)
+          const div = document.createElement('div');
+          div.innerHTML = `
+            <label style="display:block;font-size:0.75rem;font-weight:700;color:#64748b;margin-bottom:4px;">
+              ${f.l}
+            </label>
+            <input
+              type="text"
+              name="${f.k}"
+              value="${val}"
+              class="form-input"
+              style="border-color:${val ? '#10b981' : '#e2e8f0'}">`;
+          grid.appendChild(div);
+        }
+      });
+
+      finalConfig = {
+        core: { abaFatos: res.createdSheet },
+        studySummary: res.studySummary
+      };
+
     }).apiMagicSetup(wizFiles.pdf, wizFiles.data, wizFiles.name, sheet);
   }
+
   function saveConfig() {
-    document.querySelectorAll('#form-config input').forEach(i => finalConfig.core[i.name] = i.value);
+    // Coleta todos os campos do form (incluindo colTfg)
+    document.querySelectorAll('#form-config input').forEach(i => {
+      finalConfig.core[i.name] = i.value;
+    });
+
     finalConfig.exames = { active: true, aba: finalConfig.core.abaFatos };
-    finalConfig.rams = { active: true, aba: finalConfig.core.abaFatos };
+    finalConfig.rams   = { active: true, aba: finalConfig.core.abaFatos };
+
+    // Propaga colTfg para o namespace do módulo renal
+    if (finalConfig.core.colTfg) {
+      finalConfig.renal = {
+        active: true,
+        aba:    finalConfig.core.abaFatos,
+        colTfg: finalConfig.core.colTfg
+      };
+    }
+
     const doImport = document.getElementById('chk-import-refs').checked;
     if(window.showLoading) window.showLoading(true);
+
     google.script.run.withSuccessHandler(res => {
-      if(!res.sucesso) { if(window.showLoading) window.showLoading(false); return alert(res.erro); }
+      if(!res.sucesso) {
+        if(window.showLoading) window.showLoading(false);
+        return alert(res.erro);
+      }
       if(doImport) {
-         google.script.run.withSuccessHandler(resRef => {
-            if(window.showLoading) window.showLoading(false);
-            alert("Sucesso! Sistema pronto."); location.reload();
-         }).apiImportarReferencias();
-      } else { if(window.showLoading) window.showLoading(false); location.reload(); }
+        google.script.run.withSuccessHandler(() => {
+          if(window.showLoading) window.showLoading(false);
+          alert("Sucesso! Sistema pronto.");
+          location.reload();
+        }).apiImportarReferencias();
+      } else {
+        if(window.showLoading) window.showLoading(false);
+        location.reload();
+      }
     }).apiSaveConfig(finalConfig);
   }
 </script>
