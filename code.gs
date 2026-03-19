@@ -593,3 +593,338 @@ function apiGetPatientTimeline(pid) {
     return { sucesso: false, erro: "Erro inesperado no servidor: " + e.message };
   }
 }
+
+// ============================================================================
+// ★★★ MÓDULO DE EXPORTAÇÃO PARA GOOGLE SLIDES (v1.0)
+// Adicionar ao final do arquivo code.gs
+// ============================================================================
+
+/**
+ * Exporta um item do relatório para uma apresentação Google Slides.
+ * Mantém uma apresentação master persistente por instância (armazenada em ScriptProperties).
+ *
+ * @param {object} itemData - Objeto com as propriedades do item a exportar:
+ *   - title {string}        : Título do card
+ *   - type  {string}        : 'chart' | 'table'
+ *   - timestamp {string}    : Data/hora de criação
+ *   - userComment {string}  : Parecer técnico do utilizador (opcional)
+ *   - imageBase64 {string}  : PNG em Base64 (obrigatório se type === 'chart')
+ *   - tableData {Array}     : Array de objetos (obrigatório se type === 'table')
+ *   - source {string}       : Módulo de origem (ex: "Explorador")
+ * @returns {{ sucesso: boolean, url: string, slideNumber: number, erro: string }}
+ */
+function apiExportItemToSlide(itemData) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    let presentation;
+    const masterPresId = props.getProperty('EUM_SLIDES_MASTER_ID');
+
+    if (masterPresId) {
+      try {
+        presentation = SlidesApp.openById(masterPresId);
+      } catch (e) {
+        // Apresentação foi apagada ou acesso revogado → criar nova
+        presentation = createEumPresentation_();
+        props.setProperty('EUM_SLIDES_MASTER_ID', presentation.getId());
+      }
+    } else {
+      presentation = createEumPresentation_();
+      props.setProperty('EUM_SLIDES_MASTER_ID', presentation.getId());
+    }
+
+    // Adiciona novo slide em branco
+    const slide = presentation.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+    const slideNumber = presentation.getSlides().length;
+
+    // Monta o conteúdo profissional do slide
+    buildProfessionalSlide_(slide, itemData, slideNumber);
+
+    // URL da apresentação (navegador abrirá no slide correto via hash)
+    const presUrl = 'https://docs.google.com/presentation/d/'
+      + presentation.getId()
+      + '/edit#slide=p' + slideNumber;
+
+    return {
+      sucesso: true,
+      url: presUrl,
+      presentationId: presentation.getId(),
+      slideNumber: slideNumber
+    };
+
+  } catch (e) {
+    return { sucesso: false, erro: 'Erro ao exportar para Slide: ' + e.message };
+  }
+}
+
+/**
+ * Cria uma nova apresentação EUM com slide de capa.
+ * @returns {GoogleAppsScript.Slides.Presentation}
+ */
+function createEumPresentation_() {
+  const title = 'EUM Manager — Relatório de Evidências ('
+    + new Date().toLocaleDateString('pt-BR') + ')';
+  const presentation = SlidesApp.create(title);
+
+  // Usa o primeiro slide padrão como capa
+  const coverSlide = presentation.getSlides()[0];
+  buildCoverSlide_(coverSlide);
+
+  return presentation;
+}
+
+/**
+ * Constrói o slide de capa da apresentação.
+ * @param {GoogleAppsScript.Slides.Slide} slide
+ */
+function buildCoverSlide_(slide) {
+  const W = 9144000; // 10 polegadas em EMU
+  const H = 6858000; // 7.5 polegadas em EMU
+
+  // Fundo escuro
+  const bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W, H);
+  bg.getFill().setSolidFill('#0f172a');
+  bg.getBorder().setTransparent();
+
+  // Faixa de acento
+  const accent = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, H * 0.55, W * 0.15, H * 0.3);
+  accent.getFill().setSolidFill('#2563eb');
+  accent.getBorder().setTransparent();
+
+  // Título principal
+  const titleBox = slide.insertTextBox('EUM Manager', Math.round(W * 0.1), Math.round(H * 0.28), Math.round(W * 0.8), Math.round(H * 0.2));
+  titleBox.getText().getTextStyle()
+    .setFontSize(52).setForegroundColor('#FFFFFF').setBold(true).setFontFamily('Arial');
+  titleBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  titleBox.getFill().setTransparent();
+  titleBox.getBorder().setTransparent();
+
+  // Subtítulo
+  const subBox = slide.insertTextBox('Relatório de Evidências Clínicas', Math.round(W * 0.1), Math.round(H * 0.5), Math.round(W * 0.8), Math.round(H * 0.1));
+  subBox.getText().getTextStyle().setFontSize(22).setForegroundColor('#94a3b8').setFontFamily('Arial');
+  subBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  subBox.getFill().setTransparent();
+  subBox.getBorder().setTransparent();
+
+  // Data de geração
+  const dateStr = new Date().toLocaleDateString('pt-BR', { year: 'numeric', month: 'long', day: 'numeric' });
+  const dateBox = slide.insertTextBox(dateStr, Math.round(W * 0.1), Math.round(H * 0.65), Math.round(W * 0.8), Math.round(H * 0.08));
+  dateBox.getText().getTextStyle().setFontSize(14).setForegroundColor('#475569').setItalic(true).setFontFamily('Arial');
+  dateBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  dateBox.getFill().setTransparent();
+  dateBox.getBorder().setTransparent();
+}
+
+/**
+ * Constrói o conteúdo completo de um slide de evidência.
+ * @param {GoogleAppsScript.Slides.Slide} slide
+ * @param {object} item - Dados do item
+ * @param {number} slideNum - Número sequencial do slide
+ */
+function buildProfessionalSlide_(slide, item, slideNum) {
+  // === DIMENSÕES (EMU) ===
+  const W        = 9144000;
+  const H        = 6858000;
+  const MARGIN   = 457200;   // 0.5"
+  const HEADER_H = 1188720;  // ~1.3"
+  const FOOTER_H = 480060;   // ~0.525"
+
+  const CONTENT_TOP = HEADER_H + Math.round(MARGIN * 0.4);
+  const CONTENT_H   = H - HEADER_H - FOOTER_H - Math.round(MARGIN * 0.8);
+  const CONTENT_W   = W - MARGIN * 2;
+
+  // === 1. CABEÇALHO ===
+  const headerBg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W, HEADER_H);
+  headerBg.getFill().setSolidFill('#1e293b');
+  headerBg.getBorder().setTransparent();
+
+  // Faixa azul de acento na base do cabeçalho
+  const accentLine = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, HEADER_H - 91440, W, 91440);
+  accentLine.getFill().setSolidFill('#2563eb');
+  accentLine.getBorder().setTransparent();
+
+  // Título
+  const titleBox = slide.insertTextBox(
+    item.title || 'Evidência Clínica',
+    MARGIN, Math.round(MARGIN * 0.5), W - MARGIN * 2, HEADER_H - MARGIN
+  );
+  titleBox.getText().getTextStyle()
+    .setFontSize(24).setForegroundColor('#FFFFFF').setBold(true).setFontFamily('Arial');
+  titleBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  titleBox.getFill().setTransparent();
+  titleBox.getBorder().setTransparent();
+
+  // Badge de fonte/tipo (canto superior direito)
+  const sourceBadge = slide.insertTextBox(
+    (item.source || 'EUM') + ' · #' + slideNum,
+    W - MARGIN - 1097280, Math.round(MARGIN * 0.5), 1097280, Math.round(MARGIN * 0.8)
+  );
+  sourceBadge.getText().getTextStyle().setFontSize(10).setForegroundColor('#94a3b8').setFontFamily('Arial');
+  const sPara = sourceBadge.getText().getParagraphs()[0].getRange().getParagraphStyle();
+  sPara.setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+  sourceBadge.getFill().setTransparent();
+  sourceBadge.getBorder().setTransparent();
+
+  // === 2. ÁREA DE CONTEÚDO ===
+  if (item.type === 'chart' && item.imageBase64) {
+    insertChartImageInSlide_(slide, item.imageBase64, MARGIN, CONTENT_TOP, CONTENT_W, CONTENT_H);
+  } else if (item.type === 'table' && item.tableData && item.tableData.length > 0) {
+    insertTableInSlide_(slide, item.tableData, MARGIN, CONTENT_TOP, CONTENT_W, CONTENT_H);
+  } else {
+    // Fallback textual
+    const fallbackBox = slide.insertTextBox(
+      '⚠️ Conteúdo não disponível para este tipo de item.',
+      MARGIN, CONTENT_TOP + Math.round(CONTENT_H * 0.3), CONTENT_W, Math.round(CONTENT_H * 0.4)
+    );
+    fallbackBox.getText().getTextStyle().setFontSize(16).setForegroundColor('#94a3b8').setFontFamily('Arial');
+    fallbackBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    fallbackBox.getFill().setSolidFill('#f8fafc');
+  }
+
+  // === 3. RODAPÉ ===
+  const footerBg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, H - FOOTER_H, W, FOOTER_H);
+  footerBg.getFill().setSolidFill('#f1f5f9');
+  footerBg.getBorder().setTransparent();
+
+  const footerLeft = slide.insertTextBox(
+    '🔬 EUM Manager — Plataforma de Vigilância Clínica',
+    MARGIN, H - FOOTER_H, Math.round(W * 0.6), FOOTER_H
+  );
+  footerLeft.getText().getTextStyle()
+    .setFontSize(9).setForegroundColor('#64748b').setItalic(true).setFontFamily('Arial');
+  footerLeft.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  footerLeft.getFill().setTransparent();
+  footerLeft.getBorder().setTransparent();
+
+  const footerRight = slide.insertTextBox(
+    item.timestamp || new Date().toLocaleString('pt-BR'),
+    Math.round(W * 0.6), H - FOOTER_H, Math.round(W * 0.4) - MARGIN, FOOTER_H
+  );
+  footerRight.getText().getTextStyle()
+    .setFontSize(9).setForegroundColor('#64748b').setFontFamily('Arial');
+  footerRight.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  const rPara = footerRight.getText().getParagraphs()[0].getRange().getParagraphStyle();
+  rPara.setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+  footerRight.getFill().setTransparent();
+  footerRight.getBorder().setTransparent();
+
+  // === 4. NOTAS DO APRESENTADOR (Parecer Técnico) ===
+  if (item.userComment && item.userComment.trim()) {
+    const notes = slide.getNotesPage().getSpeakerNotesShape();
+    notes.getText().setText('📝 PARECER TÉCNICO DO FARMACÊUTICO/MÉDICO:\n\n' + item.userComment.trim());
+    notes.getText().getTextStyle().setFontSize(12).setFontFamily('Arial');
+  }
+}
+
+/**
+ * Insere imagem de gráfico Base64 no slide, centralizada e com proporção 16:9.
+ */
+function insertChartImageInSlide_(slide, imageBase64, left, top, width, height) {
+  try {
+    const b64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+    const blob = Utilities.newBlob(Utilities.base64Decode(b64), 'image/png', 'eum_chart.png');
+    const img = slide.insertImage(blob);
+
+    // Calcula dimensões mantendo proporção 16:9
+    const targetW = width;
+    const targetH = Math.round(width * 9 / 16);
+    const finalH = Math.min(targetH, height);
+    const finalW = Math.round(finalH * 16 / 9);
+
+    // Centraliza dentro da área de conteúdo
+    const imgLeft = left + Math.round((width - finalW) / 2);
+    const imgTop  = top  + Math.round((height - finalH) / 2);
+
+    img.setLeft(imgLeft).setTop(imgTop).setWidth(finalW).setHeight(finalH);
+
+  } catch (e) {
+    // Se inserção de imagem falhar, adiciona mensagem de erro
+    const errBox = slide.insertTextBox(
+      '⚠️ Falha ao renderizar imagem: ' + e.message, left, top, width, Math.round(height * 0.3)
+    );
+    errBox.getText().getTextStyle().setFontSize(12).setForegroundColor('#ef4444').setFontFamily('Arial');
+    errBox.getFill().setSolidFill('#fef2f2');
+  }
+}
+
+/**
+ * Insere dados tabulares como uma tabela formatada no slide.
+ * Limita a 15 linhas de dados e 8 colunas para legibilidade.
+ */
+function insertTableInSlide_(slide, tableData, left, top, width, height) {
+  const headers    = Object.keys(tableData[0]).slice(0, 8);       // Máx. 8 colunas
+  const numDataRows = Math.min(tableData.length, 15);             // Máx. 15 linhas
+  const numRows    = numDataRows + 1;                             // +1 para cabeçalho
+  const numCols    = headers.length;
+
+  // Calcula altura da tabela para caber na área de conteúdo
+  const maxRowH = 457200; // 0.5" por linha máx.
+  const rowH    = Math.min(Math.floor(height / numRows), maxRowH);
+  const tableH  = rowH * numRows;
+  const tableTop = top + Math.floor((height - tableH) / 2);
+
+  const table = slide.insertTable(numRows, numCols, left, tableTop, width, tableH);
+
+  // === Linha de Cabeçalho ===
+  for (let c = 0; c < numCols; c++) {
+    const cell = table.getCell(0, c);
+    cell.getText().setText(String(headers[c]).substring(0, 22));
+    cell.getText().getTextStyle()
+      .setBold(true).setFontSize(10).setForegroundColor('#FFFFFF').setFontFamily('Arial');
+    cell.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    cell.getFill().setSolidFill('#1e293b');
+  }
+
+  // === Linhas de Dados ===
+  for (let r = 0; r < numDataRows; r++) {
+    const rowData = tableData[r];
+    const isEven  = r % 2 === 0;
+    for (let c = 0; c < numCols; c++) {
+      const cell = table.getCell(r + 1, c);
+      const val  = (rowData[headers[c]] !== undefined && rowData[headers[c]] !== null)
+        ? String(rowData[headers[c]]).substring(0, 30)
+        : '—';
+      cell.getText().setText(val);
+      cell.getText().getTextStyle()
+        .setFontSize(9).setForegroundColor('#334155').setFontFamily('Arial');
+      cell.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      cell.getFill().setSolidFill(isEven ? '#f8fafc' : '#FFFFFF');
+    }
+  }
+
+  // Nota de truncamento se necessário
+  if (tableData.length > 15 || Object.keys(tableData[0]).length > 8) {
+    const noteText = [];
+    if (tableData.length > 15) noteText.push('Exibindo 15 de ' + tableData.length + ' registros');
+    if (Object.keys(tableData[0]).length > 8) noteText.push('colunas reduzidas para 8');
+    const noteBox = slide.insertTextBox(
+      'ℹ️ ' + noteText.join(' | ') + '. Consulte o relatório HTML para dados completos.',
+      left, tableTop + tableH + 91440, width, 274638
+    );
+    noteBox.getText().getTextStyle()
+      .setFontSize(9).setForegroundColor('#94a3b8').setItalic(true).setFontFamily('Arial');
+    noteBox.getFill().setTransparent();
+    noteBox.getBorder().setTransparent();
+  }
+}
+
+/**
+ * Limpa o ID da apresentação master armazenado, forçando criação de nova no próximo export.
+ * Útil para iniciar um novo relatório de apresentação.
+ */
+function apiResetSlidesPresentation() {
+  PropertiesService.getScriptProperties().deleteProperty('EUM_SLIDES_MASTER_ID');
+  return { sucesso: true, msg: 'Apresentação master resetada. Próximo export criará uma nova.' };
+}
+
+/**
+ * Retorna o URL da apresentação master atual (se existir).
+ */
+function apiGetSlidesUrl() {
+  const presId = PropertiesService.getScriptProperties().getProperty('EUM_SLIDES_MASTER_ID');
+  if (!presId) return { sucesso: false, erro: 'Nenhuma apresentação exportada ainda.' };
+  return {
+    sucesso: true,
+    url: 'https://docs.google.com/presentation/d/' + presId + '/edit',
+    presentationId: presId
+  };
+}
